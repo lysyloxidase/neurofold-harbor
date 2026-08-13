@@ -1,0 +1,51 @@
+schema_version = "1.4"
+reward = "continuous"
+
+[task]
+name = "neurofold/alzheimer-tau-v8"
+version = "8.0.0"
+description = "Edge-aware, history-dependent conformational-control benchmark for a tau dimer (tau repeat-domain fragment PHF6*-PHF6): suppress pathological beta-register maturation via contact-selective destabilisation."
+authors = [{ name = "NeuroFold-Harbor" }]
+keywords = [
+  "reinforcement-learning",
+  "graph-neural-network",
+  "protein",
+  "neurodegeneration",
+  "ai-for-science",
+  "harbor",
+  "sequential-decision-making",
+  "alzheimers",
+  "tau",
+  "tauopathy",
+]
+
+[metadata]
+difficulty = "unbenchmarked"
+category = "ai-for-science"
+reward_type = "continuous"
+scientific_scope = "Physics-informed coarse-grained stochastic conformational-control benchmark at 5 residues per bead. Not atomistic MD, not a folding free-energy predictor, not a disease simulator."
+disease = "Alzheimer's disease / tauopathy"
+protein = "tau repeat-domain fragment PHF6*-PHF6 (UniProt P10636, residues 585-635)"
+action_space = "(i, j, strength): contact-selective energy modulation of pair (i,j) followed by ordinary Metropolis relaxation; not a mechanical force"
+version_notes = "v8: two-chain dimer; non-separable pair chemistry so partner identity matters; directional saturable beta term and saturable polar-zipper term; maturation/locking hysteresis so action ORDER matters; irreversible damage from physical events only; partial observability; action budget. Extensive parameters normalised by measured mass ratios, not fitted. Porting gate: 8/8 PASS on first attempt, no per-task adjustment. No A1 relational-necessity experiment was run for this task."
+
+[agent]
+timeout_sec = 3600.0
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "separate"
+
+[environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 4096
+network_mode = "no-network"
+
+[verifier.environment]
+build_timeout_sec = 900.0
+cpus = 4
+memory_mb = 4096
+storage_mb = 4096
+network_mode = "no-network"

@@ -1,0 +1,67 @@
+{
+  "task": "als-ftd-tdp43-v8",
+  "n_episodes": 256,
+  "seeds": [
+    5000,
+    5255
+  ],
+  "P8_original": "FAIL",
+  "threshold": 0.1,
+  "note": "Final precision audit. Single evaluation at N=256, no intermediate inspection. Does not re-open P8.",
+  "arms": {
+    "no-op": {
+      "utility": -2.071505803532547,
+      "catastrophe": 0.6328125,
+      "catastrophe_ci95_bootstrap": [
+        0.57421875,
+        0.69140625
+      ],
+      "catastrophe_ci95_wilson": [
+        0.5722045176029711,
+        0.6894933783459456
+      ],
+      "catastrophic_episodes": 162,
+      "damage": 1.2496738076525098,
+      "damage_p90": 2.5,
+      "pathology": 0.06777883984375,
+      "safe_fraction": 0.37105305989583337
+    },
+    "heuristic oracle s=1.0": {
+      "utility": -0.3150008419649302,
+      "catastrophe": 0.12890625,
+      "catastrophe_ci95_bootstrap": [
+        0.08984375,
+        0.171875
+      ],
+      "catastrophe_ci95_wilson": [
+        0.09328022103441713,
+        0.17550506969655127
+      ],
+      "catastrophic_episodes": 33,
+      "damage": 0.3170681246809726,
+      "damage_p90": 0.8246694634808828,
+      "pathology": 0.06776465234375001,
+      "safe_fraction": 0.4571533203125
+    },
+    "learned reference": {
+      "utility": -0.16852123292296886,
+      "catastrophe": 0.0859375,
+      "catastrophe_ci95_bootstrap": [
+        0.0546875,
+        0.12109375
+      ],
+      "catastrophe_ci95_wilson": [
+        0.0574351542702768,
+        0.12668317012427743
+      ],
+      "catastrophic_episodes": 22,
+      "damage": 0.24434065754385176,
+      "damage_p90": 0.6793572125543414,
+      "pathology": 0.06897234765625,
+      "safe_fraction": 0.4731852213541667
+    }
+  },
+  "diagnostic_verdict": "PASS",
+  "action": "learned-control diagnostic PASS; TDP-43 may remain in the main set",
+  "utility_improves_over_noop": true
+}

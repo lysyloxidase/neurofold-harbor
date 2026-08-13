@@ -1,0 +1,210 @@
+{
+  "benchmark": "NeuroFold-Harbor v8",
+  "updated_utc": "2026-08-13T08:14:28.403759+00:00",
+  "stage": "PACKAGER",
+  "golden_template": "alzheimer-abeta42-v8",
+  "frozen": true,
+  "final_seeds_generated": true,
+  "final_audit": "PASS",
+  "artifact_contract": "PASS",
+  "tasks": {
+    "alzheimer-abeta42-v8": {
+      "status": "frozen",
+      "porting_gate": {
+        "P1_geometry_responds": "PASS",
+        "P2_calibration_non_degenerate": "PASS",
+        "P3_noop_not_optimum": "PASS",
+        "P4_pathology_matures": "PASS",
+        "P5_targeted_improves": "PASS (d_z=+1.366, CI[+0.879,+1.334])",
+        "P6_blind_worse": "PASS (oracle vs blind d_z=+1.439)",
+        "P7_action_order_matters": "PASS (CI[+0.083,+0.547])",
+        "P8_catastrophe_controllable": "PASS (0.021)"
+      },
+      "harbor_gate": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "frozen": true,
+      "anchors_final_test": {
+        "episodes": 128,
+        "zero_utility": -2.2263,
+        "zero_catastrophe": 0.6406,
+        "reference_utility": -0.1024,
+        "reference_catastrophe": 0.0625
+      },
+      "oracle_reward": 1.0,
+      "structural_gates": {
+        "A1_relational": "PASS (+0.557, CI[+0.126,+0.698])"
+      }
+    },
+    "parkinson-alpha-synuclein-v8": {
+      "status": "frozen",
+      "porting_gate": {
+        "P1_geometry_responds": "PASS",
+        "P2_calibration_non_degenerate": "PASS",
+        "P3_noop_not_optimum": "PASS",
+        "P4_pathology_matures": "PASS",
+        "P5_targeted_improves": "PASS",
+        "P6_blind_worse": "PASS",
+        "P7_action_order_matters": "INCONCLUSIVE (d=-0.014, CI[-0.175,+0.147], 96 seeds)",
+        "P8_catastrophe_controllable": "PASS"
+      },
+      "harbor_gate": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "frozen": true,
+      "anchors_final_test": {
+        "episodes": 128,
+        "zero_utility": -1.7286,
+        "zero_catastrophe": 0.5312,
+        "reference_utility": -0.6585,
+        "reference_catastrophe": 0.2344
+      },
+      "oracle_reward": 0.999999999953,
+      "note": "P7 INCONCLUSIVE at 96 dev seeds (d=-0.014, CI[-0.175,+0.147]): limited power, not evidence of absence. Documented in instruction.md."
+    },
+    "alzheimer-tau-v8": {
+      "status": "frozen",
+      "porting_gate": {
+        "P1_geometry_responds": "PASS",
+        "P2_calibration_non_degenerate": "PASS",
+        "P3_noop_not_optimum": "PASS",
+        "P4_pathology_matures": "PASS",
+        "P5_targeted_improves": "PASS",
+        "P6_blind_worse": "PASS",
+        "P7_action_order_matters": "PASS",
+        "P8_catastrophe_controllable": "PASS"
+      },
+      "harbor_gate": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "frozen": true,
+      "anchors_final_test": {
+        "episodes": 128,
+        "zero_utility": -1.9302,
+        "zero_catastrophe": 0.5391,
+        "reference_utility": -0.4652,
+        "reference_catastrophe": 0.1641
+      },
+      "oracle_reward": 1.0,
+      "porting_gate_tally": {
+        "PASS": 8,
+        "INCONCLUSIVE": 0,
+        "FAIL": 0
+      }
+    },
+    "als-ftd-tdp43-v8": {
+      "status": "frozen",
+      "porting_gate": {
+        "P1_geometry_responds": "PASS",
+        "P2_calibration_non_degenerate": "PASS",
+        "P3_noop_not_optimum": "PASS",
+        "P4_pathology_matures": "PASS",
+        "P5_targeted_improves": "PASS",
+        "P6_blind_worse": "PASS",
+        "P7_action_order_matters": "INCONCLUSIVE",
+        "P8_catastrophe_controllable": "FAIL"
+      },
+      "harbor_gate": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "frozen": true,
+      "anchors_final_test": {
+        "episodes": 128,
+        "zero_utility": -2.1875,
+        "zero_catastrophe": 0.6953,
+        "reference_utility": -0.145,
+        "reference_catastrophe": 0.1016
+      },
+      "oracle_reward": 1.0,
+      "porting_gate_tally": {
+        "PASS": 6,
+        "INCONCLUSIVE": 1,
+        "FAIL": 1
+      },
+      "note": "P8 heuristic probe FAIL (best hand-coded policy 0.167 > 0.10 threshold) and NOT re-opened. Learned-control diagnostic, decision rule pre-registered before the run: catastrophe 8.59% (22/256 fresh seeds), 95% CI [5.5%, 12.1%] \u2014 point estimate under the 10% threshold, interval crossing it. Both reported together. Documented in instruction.md and reports/audits/tdp43_final_report.md."
+    },
+    "huntington-htt-polyq-v8": {
+      "status": "frozen",
+      "porting_gate": {
+        "P1_geometry_responds": "PASS",
+        "P2_calibration_non_degenerate": "PASS",
+        "P3_noop_not_optimum": "PASS",
+        "P4_pathology_matures": "PASS",
+        "P5_targeted_improves": "PASS",
+        "P6_blind_worse": "PASS",
+        "P7_action_order_matters": "PASS",
+        "P8_catastrophe_controllable": "PASS"
+      },
+      "harbor_gate": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "frozen": true,
+      "anchors_final_test": {
+        "episodes": 128,
+        "zero_utility": -1.7514,
+        "zero_catastrophe": 0.5391,
+        "reference_utility": -1.093,
+        "reference_catastrophe": 0.3438
+      },
+      "oracle_reward": 1.0,
+      "structural_gates": {
+        "A1_relational": "INCONCLUSIVE (+0.200, CI[-0.120,+0.432])"
+      },
+      "note": "Porting this protein required adding the polar-zipper mechanism to the shared chemistry, which re-opened the Abeta42 freeze; every task was re-validated and re-frozen afterwards."
+    }
+  },
+  "freeze_history": [
+    {
+      "utc": "2026-08-12T16:06:55Z",
+      "event": "Abeta42 frozen (pre-polar-zipper)"
+    },
+    {
+      "utc": "2026-08-12T18:15:40Z",
+      "event": "freeze re-opened, authorised by the task owner, to add the polar-zipper mechanism required by HTT; all pre-change anchors invalidated"
+    },
+    {
+      "utc": "2026-08-13T08:14:28.403759+00:00",
+      "event": "all five tasks frozen on fresh disjoint final seeds under the post-change chemistry"
+    }
+  ],
+  "governance": {
+    "v7_final_test": "CONTAMINATED \u2014 never reused in v8",
+    "final_seeds": "generated only at freeze, never inspected during development",
+    "post_freeze_tuning": "none \u2014 no reward, threshold, chemistry or model parameter was changed after any final-test result"
+  }
+}

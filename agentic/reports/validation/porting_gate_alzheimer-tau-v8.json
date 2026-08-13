@@ -1,0 +1,125 @@
+{
+  "task": "alzheimer-tau-v8",
+  "verdicts": {
+    "P1_geometry_responds": "PASS",
+    "P2_calibration_non_degenerate": "PASS",
+    "P3_noop_not_optimum": "PASS",
+    "P4_pathology_matures": "PASS",
+    "P5_targeted_improves": "PASS",
+    "P6_blind_worse": "PASS",
+    "P7_action_order_matters": "PASS",
+    "P8_catastrophe_controllable": "PASS"
+  },
+  "tally": {
+    "PASS": 8,
+    "INCONCLUSIVE": 0,
+    "FAIL": 0
+  },
+  "blocking": [],
+  "results": {
+    "P1": {
+      "beads": 22,
+      "crankshaft_moved": 22,
+      "displace_moved": 22,
+      "energy_inert_beads": []
+    },
+    "P2": {
+      "degenerate": false,
+      "max_clip_fraction": 0.0,
+      "scales": {
+        "pathology_reduction": 0.020510512,
+        "improvement": 13.700724239302344,
+        "path_gain": 8.689331171371583,
+        "safe_fraction": 0.5,
+        "damage": 0.6780742453706128,
+        "action_energy": 0.5,
+        "barrier_energy": 0.15000000000000024
+      }
+    },
+    "arms": {
+      "noop": {
+        "utility": -1.4230564811029864,
+        "catastrophe": 0.3958333333333333,
+        "pathology": 0.04811504166666667,
+        "damage": 0.7542991922708037,
+        "locked": 4.166666666666667
+      },
+      "o03": {
+        "utility": -0.15169327934842333,
+        "catastrophe": 0.0625,
+        "pathology": 0.0446128225,
+        "damage": 0.267880947900635,
+        "locked": 4.291666666666667
+      },
+      "o06": {
+        "utility": -0.11452942215009568,
+        "catastrophe": 0.041666666666666664,
+        "pathology": 0.04474630166666666,
+        "damage": 0.198078734087224,
+        "locked": 4.354166666666667
+      },
+      "o10": {
+        "utility": -0.21600793549910044,
+        "catastrophe": 0.0625,
+        "pathology": 0.04453640833333333,
+        "damage": 0.15473572064382712,
+        "locked": 4.395833333333333
+      },
+      "b06": {
+        "utility": -1.3760332538133226,
+        "catastrophe": 0.3541666666666667,
+        "pathology": 0.047325159166666665,
+        "damage": 0.7544025607648623,
+        "locked": 4.270833333333333
+      },
+      "b10": {
+        "utility": -1.273283879609395,
+        "catastrophe": 0.2916666666666667,
+        "pathology": 0.0478553775,
+        "damage": 0.7045770776909043,
+        "locked": 4.229166666666667
+      }
+    },
+    "P3": {
+      "best_arm": "o06",
+      "d": 0.5833318723877093,
+      "ci": [
+        0.40409446364801277,
+        0.7683502356547813
+      ]
+    },
+    "P4": {
+      "noop_locked_pairs": 4.166666666666667,
+      "noop_n_run": 3.3958333333333335
+    },
+    "P5": {
+      "arm": "o06",
+      "d_z": 0.8912259976005112,
+      "ci": [
+        0.40409446364801277,
+        0.7683502356547813
+      ]
+    },
+    "P6": {
+      "oracle_vs_blind_d": 0.5915532322296809,
+      "ci": [
+        0.38104411394020865,
+        0.8041450051206914
+      ],
+      "blind_minus_noop": -0.00822135984197154
+    },
+    "P7": {
+      "early_minus_late": -0.2904293067261566,
+      "ci": [
+        -0.5185041899083996,
+        -0.06489403411715751
+      ]
+    },
+    "P8": {
+      "arm": "o06",
+      "catastrophe": 0.041666666666666664,
+      "noop_catastrophe": 0.3958333333333333
+    }
+  },
+  "pass": true
+}

@@ -1,0 +1,16 @@
+{
+  "gate": "P7_action_order_matters",
+  "verdict": "INCONCLUSIVE",
+  "d": -0.013998433947005456,
+  "ci95": [
+    -0.1750472968994002,
+    0.14654143148066523
+  ],
+  "negligible_band": 0.1475288481998362,
+  "two_sided": true,
+  "note": "CI spans zero and exceeds the negligible band 0.148 \u2014 limited power, not evidence of absence",
+  "task": "parkinson-alpha-synuclein-v8",
+  "seeds": 96,
+  "arm": "o10",
+  "note_power": "post-hoc power increase from 48 to 96 dev seeds; threshold and negligible band unchanged"
+}

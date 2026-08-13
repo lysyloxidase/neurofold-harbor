@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# run logs: local absolute paths, regenerable
+*.log
+
+# build outputs: regenerable with `python3 _dev/package.py`
+dist/

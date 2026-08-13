@@ -1,0 +1,87 @@
+{
+  "policy": "All splits disjoint. Final-test seeds are generated only after freeze and never inspected.",
+  "public": {
+    "train": [
+      1000,
+      1064
+    ],
+    "validation": [
+      2000,
+      2032
+    ],
+    "calibration": [
+      3000,
+      3064
+    ]
+  },
+  "development": {
+    "porting_gate_dev": [
+      2000,
+      2048
+    ],
+    "tdp43_diagnostic": [
+      4000,
+      4064
+    ],
+    "tdp43_precision_audit": [
+      5000,
+      5256
+    ]
+  },
+  "hidden": {
+    "author_validation": [
+      500000,
+      500064
+    ],
+    "final_test": "generated at freeze, range 900000+"
+  },
+  "v7_final_test": "CONTAMINATED - never reused",
+  "updated_utc": "2026-08-13T08:14:28.403759+00:00",
+  "tasks": {
+    "alzheimer-abeta42-v8": {
+      "final_test_generated": true,
+      "final_test_sha256": "b41bfa553345655b309edb1208d54e4fec8b1d22f9b564911287338269449837",
+      "final_test_range": [
+        900312,
+        1393172
+      ],
+      "episodes": 128
+    },
+    "parkinson-alpha-synuclein-v8": {
+      "final_test_generated": true,
+      "final_test_sha256": "9edc263e836639f7f9edb43f9b779422eaa5e5be8fa2d7ff86163b303fbf5730",
+      "final_test_range": [
+        905254,
+        1398871
+      ],
+      "episodes": 128
+    },
+    "alzheimer-tau-v8": {
+      "final_test_generated": true,
+      "final_test_sha256": "e40419975acfae7259adfc9a37dd45f96d5c6504c7aaf7c716c903f330bb81c5",
+      "final_test_range": [
+        900847,
+        1399554
+      ],
+      "episodes": 128
+    },
+    "als-ftd-tdp43-v8": {
+      "final_test_generated": true,
+      "final_test_sha256": "a1a49d7bdf64ba707ca0356c0b4a9100610c57dd9d75538a54b7a405c529ce3f",
+      "final_test_range": [
+        910105,
+        1390425
+      ],
+      "episodes": 128
+    },
+    "huntington-htt-polyq-v8": {
+      "final_test_generated": true,
+      "final_test_sha256": "b52b74cc1c06aef5a66f0bee6eb79548fc106d1ff19b41dda159d0db1158bc8f",
+      "final_test_range": [
+        900204,
+        1398355
+      ],
+      "episodes": 128
+    }
+  }
+}

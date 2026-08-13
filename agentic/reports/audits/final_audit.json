@@ -1,0 +1,81 @@
+{
+  "tasks": [
+    {
+      "task": "alzheimer-abeta42-v8",
+      "checks": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "n_final_seeds": 128,
+      "oracle_reward": 1.0
+    },
+    {
+      "task": "parkinson-alpha-synuclein-v8",
+      "checks": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "n_final_seeds": 128,
+      "oracle_reward": 0.999999999953
+    },
+    {
+      "task": "alzheimer-tau-v8",
+      "checks": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "n_final_seeds": 128,
+      "oracle_reward": 1.0
+    },
+    {
+      "task": "als-ftd-tdp43-v8",
+      "checks": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "n_final_seeds": 128,
+      "oracle_reward": 1.0
+    },
+    {
+      "task": "huntington-htt-polyq-v8",
+      "checks": {
+        "H1_layout": "PASS",
+        "H2_task_toml": "PASS",
+        "H7_no_leakage": "PASS",
+        "H8_splits_disjoint": "PASS",
+        "H9_freeze_hashes": "PASS",
+        "H3_docker_build": "PASS",
+        "H4_oracle_1.0": "PASS",
+        "H5_malformed_rejected": "PASS"
+      },
+      "n_final_seeds": 128,
+      "oracle_reward": 1.0
+    }
+  ],
+  "artifact_contract": "PASS",
+  "overall": "PASS"
+}

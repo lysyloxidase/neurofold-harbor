@@ -1,0 +1,92 @@
+{
+  "weights": {
+    "pathology_reduction": 0.34,
+    "improvement": 0.14,
+    "path_gain": 0.12,
+    "safe_fraction": 0.2,
+    "damage": -0.12,
+    "action_energy": -0.04,
+    "barrier_energy": -0.04
+  },
+  "catastrophe_penalty": 1.25,
+  "catastrophe_damage_threshold": 0.75,
+  "calibration_seeds": [
+    3000,
+    3001,
+    3002,
+    3003,
+    3004,
+    3005,
+    3006,
+    3007,
+    3008,
+    3009,
+    3010,
+    3011,
+    3012,
+    3013,
+    3014,
+    3015,
+    3016,
+    3017,
+    3018,
+    3019,
+    3020,
+    3021,
+    3022,
+    3023,
+    3024,
+    3025,
+    3026,
+    3027,
+    3028,
+    3029,
+    3030,
+    3031
+  ],
+  "note": "Robust scales from a public policy mixture. Built from calibration seeds only; disjoint from train/validation/final-test.",
+  "calibration": {
+    "pathology_reduction": {
+      "median": -0.8000000000000002,
+      "scale": 1.024,
+      "p10": -2.136,
+      "p90": -0.08800000000000008
+    },
+    "improvement": {
+      "median": -4.087175188330393,
+      "scale": 10.860282003028395,
+      "p10": -13.667822984092558,
+      "p90": 8.052741021964232
+    },
+    "path_gain": {
+      "median": -5.236458527314866,
+      "scale": 6.4994909813750965,
+      "p10": -10.7668890003946,
+      "p90": 2.2320929623555927
+    },
+    "safe_fraction": {
+      "median": 0.7708333333333333,
+      "scale": 0.5,
+      "p10": 0.0,
+      "p90": 1.0
+    },
+    "damage": {
+      "median": 0.5845624261125051,
+      "scale": 1.0778342037330357,
+      "p10": 0.11724922967359255,
+      "p90": 2.272917637139664
+    },
+    "action_energy": {
+      "median": 0.600000000000001,
+      "scale": 0.5189099999999996,
+      "p10": 0.0,
+      "p90": 1.0
+    },
+    "barrier_energy": {
+      "median": 0.17999999999999983,
+      "scale": 0.15567300000000042,
+      "p10": 0.0,
+      "p90": 0.3000000000000005
+    }
+  }
+}
