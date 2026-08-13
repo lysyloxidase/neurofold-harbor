@@ -1,0 +1,35 @@
+{
+  "task": "alzheimer-abeta42-v8",
+  "threshold": 0.95,
+  "n_lowdim_params": 38,
+  "budget_episodes": 3200,
+  "holdout_seeds": [
+    7100,
+    7147
+  ],
+  "arms": {
+    "zero (no-op)": {
+      "utility": -2.0291783038431794,
+      "catastrophe": 0.5416666666666666
+    },
+    "hand-set (3 weights)": {
+      "utility": 0.19042685871559384,
+      "catastrophe": 0.020833333333333332,
+      "share_of_full_gain": 1.0397570544795416
+    },
+    "low-dim (38 params)": {
+      "utility": 0.05158208788358434,
+      "catastrophe": 0.0625,
+      "share_of_full_gain": 0.974716283992347
+    },
+    "full (2541 params)": {
+      "utility": 0.10555610646559566,
+      "catastrophe": 0.0625,
+      "share_of_full_gain": 1.0
+    }
+  },
+  "low_dim_share": 0.974716283992347,
+  "hand_set_share": 1.0397570544795416,
+  "verdict": "FAIL",
+  "note": "A cheap controller reaches >=95% of the full policy's gain, so the task does not require the shipped architecture."
+}

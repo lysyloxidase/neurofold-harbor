@@ -24,7 +24,10 @@ import verdict as V
 
 ROOT = Path(__file__).resolve().parents[1]
 CALIB = list(range(3000, 3032))
-DEV = list(range(2000, 2048))
+# Gate development seeds must not overlap the public validation split (2000-2031).
+# In v8.0 they did — DEV was range(2000, 2048) — so every P1-P8 design decision was
+# measured on the same 32 episodes agents are told to select their model on.
+DEV = list(range(7000, 7048))
 
 _W = {}
 

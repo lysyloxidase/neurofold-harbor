@@ -146,7 +146,8 @@
     "metro_scale": 1.0,
     "eps_zip": 5.0,
     "zip_sharp": 2.0,
-    "zip_max_partners": 2
+    "zip_max_partners": 2,
+    "ladder_mod_block": 0.5
   },
   "conditions": {
     "crowding": [
@@ -282,5 +283,12 @@
     "normalised": {
       "elastic_limit": "20.13 = p90 of the no-op E_bond+E_angle distribution under the current chemistry. Rule: charge irreversible damage only for geometry beyond the 90th percentile of the UNCONTROLLED working range. This reproduces the original Abeta42 value (20.0 vs p90 20.13); the '1.418x median' multiple used earlier was a post-hoc description, not the rule."
     }
+  },
+  "_mechanism_v9": {
+    "change": "beta_ladder() now requires the rung's attractive interaction to be present: a pair whose modulation exceeds ladder_mod_block is not counted as a ladder rung.",
+    "why": "In v8.0 the action modulated energy while the pathology order parameter read pure geometry, with no working causal link. Measured on the public validation split: suppressing the entire ladder at full strength every step with no decay moved pathology by at most -0.04 vs no-op, and under the shipped physics by +0.045 (worse). Widening action reach made it worse (+0.5708 -> +0.5805).",
+    "ladder_mod_block": 0.5,
+    "rule": "Fixed by rule before measurement: a rung counts as blocked once its attractive interaction is suppressed by more than half. Not fitted to any outcome.",
+    "consequence": "With mod_gain=0.85 and mod_decay=0.8 one action holds a rung blocked for ~3 steps, so roughly 3 of ~7 rungs can be held at once. Which rungs, and when, becomes the control problem; the nucleus term (weight 0.4) makes the rung that splits the longest run the high-value target."
   }
 }

@@ -163,11 +163,32 @@ class EnergyModel:
         return e_excl, e_pair, e_hb, align, contact
 
     # ------------------------------------------------------------ nucleation
-    def beta_ladder(self, contact, align, dist):
-        """Boolean matrix of beta-compatible, aligned, close pairs.        [B]"""
+    def beta_ladder(self, contact, align, dist, mod=None):
+        """Boolean matrix of beta-compatible, aligned, close pairs.        [B]
+
+        A rung of a beta ladder *is* its inter-strand backbone hydrogen bond.
+        When that interaction is blocked the rung does not hold, even while the
+        two beads stay close and aligned: proximity alone is not a ladder.
+
+        Without this coupling the agent's only lever (contact-selective energy
+        modulation) acts on the energy while the order parameter reads pure
+        geometry, and the two are causally disconnected.  Measured on v8.0,
+        public validation split: suppressing the ENTIRE ladder at full strength
+        every step with no decay moved pathology by at most -0.04 against no-op,
+        and under the shipped physics it moved it the wrong way (+0.045).
+        Widening the action to whole-ladder reach made it worse, not better
+        (+0.5708 -> +0.5805).  The defect was structural, not parametric.
+
+        `ladder_mod_block` is fixed by rule, not fitted: a rung counts as
+        blocked once its attractive interaction is suppressed by more than half.
+        """
         p = self.p
-        return ((contact > p["ladder_contact"]) & (align > p["ladder_align"])
-                & (self.bb > p["ladder_beta"]) & (dist < p["contact_cutoff"] * 1.05))
+        lad = ((contact > p["ladder_contact"]) & (align > p["ladder_align"])
+               & (self.bb > p["ladder_beta"]) & (dist < p["contact_cutoff"] * 1.05))
+        blk = p.get("ladder_mod_block", 0.0)
+        if mod is not None and blk > 0.0:
+            lad = lad & (mod < blk)
+        return lad
 
     @staticmethod
     def longest_run(L):
@@ -219,7 +240,7 @@ class EnergyModel:
         e_bond, e_ang, e_tor = self.bonded(x)
         e_excl, e_pair, e_hb, align, contact = self.nonbonded(
             x, dist, w, u, screening, crowding, mod)
-        ladder = self.beta_ladder(contact, align, dist)
+        ladder = self.beta_ladder(contact, align, dist, mod)
         run = self.longest_run(ladder) if n_run is None else n_run
         e_coop = self.cooperative(run)
         e_conf = self.confinement(x, crowding)
