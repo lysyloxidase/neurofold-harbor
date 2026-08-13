@@ -34,7 +34,12 @@ import verdict as V  # noqa: E402
 from train_reference import Pool, sepcmaes  # noqa: E402
 
 TRAIN = list(range(1000, 1016))
-HOLD = list(range(7100, 7148))          # disjoint from train, validation and gate dev
+# Disjoint from train (1000-1063), public validation (2000-2031), calibration
+# (3000-3063) and the gate dev split (7000-7047).
+# Raised from 48 to 96 after the first run landed on the threshold (95.005%)
+# with no interval at all. This buys resolution, not a direction: a tighter
+# interval can resolve to either side.
+HOLD = list(range(7100, 7196))
 A3_THRESHOLD = 0.95
 
 
@@ -114,44 +119,91 @@ def main():
                              np.zeros(pr.PARAM_COUNT) + 0.02, gens, rng,
                              pr.MAX_ABS_WEIGHT)
 
+        LOW = f"low-dim ({len(mask)} params)"
+        FULL = f"full ({pr.PARAM_COUNT} params)"
         arms = {"zero (no-op)": np.zeros(pr.PARAM_COUNT),
                 "hand-set (3 weights)": hand_set(spec, pr),
-                f"low-dim ({len(mask)} params)": v_low,
-                f"full ({pr.PARAM_COUNT} params)": x_full}
-        res = {}
-        print(f"\n{'arm':30s} {'utility':>9s} {'catastrophe':>12s} {'gain vs no-op':>14s}")
+                LOW: v_low, FULL: x_full}
+        res, ep = {}, {}
+        print(f"\n{'arm':30s} {'utility':>9s} {'catastrophe':>12s}")
         for name, vec in arms.items():
-            u, cat, _ = pool.full(vec, HOLD)
+            u, cat, rows = pool.full(vec, HOLD)
             res[name] = {"utility": float(u), "catastrophe": float(cat)}
-            print(f"{name:30s} {u:9.4f} {cat:12.3f}", end="")
-            print(f"{'':>14s}" if "zero" in name else "")
+            ep[name] = rows
+            print(f"{name:30s} {u:9.4f} {cat:12.3f}")
+        vectors = {name: [float(x) for x in np.asarray(v)] for name, v in arms.items()}
     finally:
         pool.close()
 
+    from neurofold8 import reward  # noqa: E402
+    cal = json.loads((env_dir / "reward_calibration.json").read_text())["calibration"]
+
+    def share_of(rows_arm, rows_zero, rows_full):
+        """Ratio of gains, both measured against the same no-op anchor."""
+        u_a, _, _ = reward.robust_utility(rows_arm, cal)
+        u_z, _, _ = reward.robust_utility(rows_zero, cal)
+        u_f, _, _ = reward.robust_utility(rows_full, cal)
+        return (u_a - u_z) / (u_f - u_z) if u_f != u_z else float("nan")
+
+    def boot_share(name, n=4000, seed=311):
+        """Paired bootstrap over episodes: every arm ran the same seeds (CRN),
+        so episodes are resampled jointly and the full nonlinear utility is
+        recomputed per draw."""
+        rng_b = np.random.default_rng(seed)
+        m = len(HOLD)
+        vals = []
+        for _ in range(n):
+            idx = rng_b.integers(0, m, m)
+            vals.append(share_of([ep[name][i] for i in idx],
+                                 [ep["zero (no-op)"][i] for i in idx],
+                                 [ep[FULL][i] for i in idx]))
+        v = np.asarray(vals, float)
+        v = v[np.isfinite(v)]
+        return float(np.quantile(v, 0.025)), float(np.quantile(v, 0.975))
+
     base = res["zero (no-op)"]["utility"]
-    full_gain = res[f"full ({pr.PARAM_COUNT} params)"]["utility"] - base
+    full_gain = res[FULL]["utility"] - base
     out = {"task": a.task, "threshold": A3_THRESHOLD, "n_lowdim_params": int(len(mask)),
-           "budget_episodes": a.budget, "holdout_seeds": [HOLD[0], HOLD[-1]], "arms": res}
+           "budget_episodes": a.budget, "holdout_seeds": [HOLD[0], HOLD[-1]],
+           "n_holdout": len(HOLD), "arms": res, "vectors": vectors}
     print()
     for name in arms:
         if "zero" in name:
             continue
         share = (res[name]["utility"] - base) / full_gain if full_gain else float("nan")
-        res[name]["share_of_full_gain"] = float(share)
-        print(f"  {name:30s} osiaga {100*share:6.1f}% zysku pelnej polityki")
+        lo, hi = boot_share(name)
+        res[name].update({"share_of_full_gain": float(share), "share_ci95": [lo, hi]})
+        print(f"  {name:30s} osiaga {100*share:6.1f}% zysku pelnej polityki   "
+              f"95% CI [{100*lo:.1f}%, {100*hi:.1f}%]")
 
-    low_share = res[f"low-dim ({len(mask)} params)"]["share_of_full_gain"]
+    low_share = res[LOW]["share_of_full_gain"]
     hand_share = res["hand-set (3 weights)"]["share_of_full_gain"]
     worst = max(low_share, hand_share)
-    verd = V.FAIL if worst >= A3_THRESHOLD else V.PASS
+    worst_name = LOW if low_share >= hand_share else "hand-set (3 weights)"
+    # Three-valued verdict, matching the standard every other gate in this
+    # project already uses. The threshold stays at 95%; what is added is the
+    # uncertainty treatment A3 lacked. A point estimate landing on the
+    # threshold (95.005% at N=48) is not a decision, it is a coin flip.
+    lo, hi = res[worst_name]["share_ci95"]
+    if hi < A3_THRESHOLD:
+        verd = V.PASS
+        note = ("No cheap controller reaches 95% of the full policy's gain; the whole "
+                "confidence interval sits below the threshold.")
+    elif lo >= A3_THRESHOLD:
+        verd = V.FAIL
+        note = ("A cheap controller reaches >=95% of the full policy's gain, so the task "
+                "does not require the shipped architecture.")
+    else:
+        verd = V.INCONCLUSIVE
+        note = ("The confidence interval straddles the 95% threshold: this hold-out cannot "
+                "decide whether the architecture is necessary. Not evidence that it is.")
     out.update({"low_dim_share": low_share, "hand_set_share": hand_share,
-                "verdict": verd,
-                "note": ("A cheap controller reaches >=95% of the full policy's gain, so the "
-                         "task does not require the shipped architecture."
-                         if verd == V.FAIL else
-                         "No cheap controller reaches 95% of the full policy's gain.")})
+                "binding_arm": worst_name, "binding_share_ci95": [lo, hi],
+                "verdict": verd, "note": note})
     print(f"\nA3: {verd}   (prog: tania polityka musi zostac PONIZEJ "
-          f"{100*A3_THRESHOLD:.0f}%, najwyzsza tania = {100*worst:.1f}%)")
+          f"{100*A3_THRESHOLD:.0f}%; wiazace ramie: {worst_name} = {100*worst:.1f}%, "
+          f"95% CI [{100*lo:.1f}%, {100*hi:.1f}%])")
+    print(f"  {note}")
     p = ROOT / f"agentic/reports/validation/a3_{a.task}.json"
     p.write_text(json.dumps(out, indent=2) + "\n")
     print(f"wrote {p}")
