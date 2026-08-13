@@ -1,0 +1,15 @@
+{
+  "task": "alzheimer-abeta42-v8",
+  "n_seeds": 64,
+  "n_permutations": 4,
+  "mean_abs_delta": 0.07032014846952234,
+  "ci95": [
+    0.03680493329960769,
+    0.12618890343249645
+  ],
+  "negligible_band": 0.03441543326857959,
+  "utility_base": 0.34415433268579587,
+  "utility_permuted": 0.3931250088528939,
+  "fraction_order_sensitive": 1.0,
+  "verdict": "PASS"
+}

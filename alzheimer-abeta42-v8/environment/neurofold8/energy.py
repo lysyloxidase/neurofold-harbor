@@ -191,6 +191,38 @@ class EnergyModel:
         return lad
 
     @staticmethod
+    def enumerate_runs(L):
+        """Every maximal contiguous registry run, as a list of (i, j) pairs. [B]
+
+        A beta nucleus is a *contiguous* stretch of rungs on one register, not a
+        bag of pairs. Enumerating them makes it possible to ask which nucleus a
+        rung belongs to and where inside it that rung sits -- the information a
+        per-edge readout cannot recover, because a rung's own features are
+        identical whether it sits at the end of a run or in its middle.
+
+        Parallel registry follows (i+k, j+k); antiparallel follows (i+k, j-k).
+        """
+        n = L.shape[0]
+        out = []
+        for di, dj in ((1, 1), (1, -1)):
+            seen = set()
+            for i in range(n):
+                for j in range(n):
+                    if not L[i, j] or (i, j) in seen:
+                        continue
+                    pi, pj = i - di, j - dj
+                    if 0 <= pi < n and 0 <= pj < n and L[pi, pj]:
+                        continue          # not the start of its run
+                    run, a, b = [], i, j
+                    while 0 <= a < n and 0 <= b < n and L[a, b]:
+                        run.append((a, b))
+                        seen.add((a, b))
+                        a += di
+                        b += dj
+                    out.append(run)
+        return out
+
+    @staticmethod
     def longest_run(L):
         """Longest ladder-like registry run in the boolean pair matrix.
 

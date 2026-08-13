@@ -159,22 +159,55 @@ class NeuroFoldV8Env:
         return e
 
     def _pathology(self, aux):
-        """Task-defined pathological order parameter.
+        """Task-defined pathological order parameter.  [B]  post-A3 revision
 
         Kept OUT of the observation: the agent sees geometry and contacts, not
         this label.
+
+        Why this is not a pair count. Until the A3 gate failed, pathology was
+        driven by `n_run`, the length of the single longest run, so shortening
+        that run *anywhere* paid the same. A hand-set 3-weight policy blocking
+        an arbitrary ladder rung reached 96.2% of a trained 2541-parameter
+        policy's gain (95% CI [92.1%, 99.8%]): the task did not require the
+        architecture it ships with.
+
+        Two changes, both aimed at making *which* rung is disrupted matter:
+
+        1. Pathology sums a CONVEX function of length over every critical
+           nucleus instead of reading the maximum. With exponent `path_exp`,
+           splitting a run down the middle is worth far more than trimming its
+           end: an 8-rung run scores (8-L_min+1)**2, halving it scores about a
+           seventh of that, trimming one end about three quarters. A rung's own
+           features are identical in both cases, so the choice can only be made
+           by aggregating along the register.
+
+        2. Only MATURE runs are critical. A young run is a decoy: ladder-
+           positive, identical edge by edge, contributing nothing to pathology,
+           yet still costing budget and possibly damage if attacked.
+           Criticality is therefore dynamic — disrupting a nucleus resets its
+           age and promotes whichever rival nucleus has been growing
+           unattended, so the target moves during the episode.
         """
         p = self.p
         lad = aux["ladder"]
-        core = self.regions.get("core", np.ones(self.n))
-        core_pair = np.outer(core, core)
-        cross = (self.chain_id[:, None] != self.chain_id[None, :])
-        inter = float(np.sum(lad * core_pair * cross)) / 2.0
-        intra = float(np.sum(lad * core_pair * ~cross)) / 2.0
-        nucleus = max(0.0, aux["n_run"] - p["L_min"] + 1)
-        locked_path = float(np.sum(self.locked * core_pair)) / 2.0
-        return (p["path_inter"] * inter + p["path_intra"] * intra
-                + p["path_nucleus"] * nucleus + p["path_locked"] * locked_path)
+        L_min = p["L_min"]
+        exp = p.get("path_exp", 2.0)
+        crit_age = p.get("path_crit_age", 6.0)
+        norm = p.get("path_norm", 1.0)
+
+        total, locked_crit = 0.0, 0.0
+        self._critical = np.zeros_like(lad, dtype=bool)
+        for run in self.energy.enumerate_runs(lad):
+            if len(run) < L_min:
+                continue
+            if float(np.mean([self.age[a, b] for a, b in run])) < crit_age:
+                continue                    # decoy: ladder-positive, not pathological
+            total += (len(run) - L_min + 1.0) ** exp
+            for a, b in run:
+                self._critical[a, b] = self._critical[b, a] = True
+                if self.locked[a, b]:
+                    locked_crit += 0.5
+        return p["path_nucleus"] * total / norm + p["path_locked"] * locked_crit
 
     def _relax(self, x, i, n_steps=None):
         """Local elastic relaxation around bead i after an intervention.

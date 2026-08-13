@@ -43,21 +43,37 @@ HOLD = list(range(7100, 7196))
 A3_THRESHOLD = 0.95
 
 
-def head_mask(spec, pr):
-    """Indices of the readout head: <=40 free parameters.
+def head_mask(spec, pr, target):
+    """Indices of a low-dimensional controller with about `target` parameters.
 
-    The head is the edge-selection readout w_edge_sel (36) plus a constant
-    strength b_str and one W_edge entry that lets the head see an edge feature
-    at all: 38 parameters. Everything else stays zero, so the controller has no
-    message passing, no history and no state-dependent strength.
+    Parameters are added in a fixed priority order, so the 38-, 80- and
+    160-parameter arms are nested: the edge-selection readout first, then the
+    constant strength, then progressively more of the edge encoder. Everything
+    outside the mask stays zero, so none of these arms has message passing or
+    history — only a richer per-edge readout.
     """
     probe = np.arange(pr.PARAM_COUNT, dtype=float)
     p = spec.unpack(probe)
-    idx = [int(x) for x in np.atleast_1d(p["w_edge_sel"]).ravel()]
-    b = p["b_str"]
-    idx.append(int(b) if np.ndim(b) == 0 else int(np.ravel(b)[0]))
-    idx.append(int(np.atleast_2d(p["W_edge"])[0, pr.EDGE_DIM - 1]))
-    return np.array(sorted(set(idx)), dtype=int)
+
+    def flat(x):
+        return [int(v) for v in np.atleast_1d(np.asarray(x)).ravel()]
+
+    order = []
+    order += flat(p["w_edge_sel"])                                   # 36
+    order += flat(p["b_str"])                                        # +1
+    order += [int(np.atleast_2d(p["W_edge"])[0, pr.EDGE_DIM - 1])]   # +1  -> 38
+    order += flat(p["w_str"])                                        # +36
+    order += flat(p["b_edge_sel"])                                   # +1
+    order += flat(np.atleast_2d(p["W_edge"]))                        # rest of the encoder
+    order += flat(p["b_edge"])
+    seen, idx = set(), []
+    for v in order:
+        if v not in seen:
+            seen.add(v)
+            idx.append(v)
+        if len(idx) >= target:
+            break
+    return np.array(sorted(idx), dtype=int)
 
 
 def hand_set(spec, pr):
@@ -76,6 +92,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", default="alzheimer-abeta42-v8")
     ap.add_argument("--budget", type=int, default=4000, help="episodes per optimised arm")
+    ap.add_argument("--runs", type=int, default=3,
+                    help="independent optimizer restarts per optimised arm")
     ap.add_argument("--workers", type=int, default=5)
     a = ap.parse_args()
     np.seterr(all="ignore")
@@ -88,87 +106,111 @@ def main():
                            msg=pr.MSG, layers=pr.LAYERS, hist_dim=pr.HIST_DIM,
                            hist_hidden=pr.HIST_HIDDEN)
 
-    mask = head_mask(spec, pr)
-    assert len(mask) <= 40, f"low-dim arm has {len(mask)} parameters, spec says <=40"
+    masks = {k: head_mask(spec, pr, k) for k in (38, 80, 160)}
+    assert len(masks[38]) <= 40, f"gating arm has {len(masks[38])} parameters, spec says <=40"
     print(f"A3 — {a.task}")
-    print(f"  low-dim arm: {len(mask)} free parameters of {pr.PARAM_COUNT}")
-    print(f"  budget per optimised arm: {a.budget} episodes")
-    print(f"  hold-out seeds: {HOLD[0]}-{HOLD[-1]}\n")
+    print(f"  low-dim arms: {[len(m) for m in masks.values()]} free parameters "
+          f"of {pr.PARAM_COUNT}")
+    print(f"  budget per optimised arm: {a.budget} episodes (matched across arms)")
+    print(f"  restarts per optimised arm: {a.runs}")
+    print(f"  hold-out seeds: {HOLD[0]}-{HOLD[-1]} ({len(HOLD)} episodes)\n")
 
     pool = Pool(a.task, a.workers)
-    rng = np.random.default_rng(903)
     try:
         gens = max(1, a.budget // len(TRAIN))
 
-        def fb_full(X):
-            return pool.batch(X, TRAIN)
+        def optimise(dim, mask, tag):
+            """Same optimizer, same episode budget, `runs` independent restarts."""
+            best = []
+            for r in range(a.runs):
+                rng = np.random.default_rng(903 + 101 * r)
 
-        def fb_low(X):
-            full = np.zeros((len(X), pr.PARAM_COUNT))
-            full[:, mask] = X
-            return pool.batch(full, TRAIN)
+                def fb(X, mask=mask):
+                    if mask is None:
+                        return pool.batch(X, TRAIN)
+                    full = np.zeros((len(X), pr.PARAM_COUNT))
+                    full[:, mask] = X
+                    return pool.batch(full, TRAIN)
 
-        print("  [low-dim]")
-        x_low, _ = sepcmaes(fb_low, len(mask), np.zeros(len(mask)) + 0.02,
-                            gens, rng, pr.MAX_ABS_WEIGHT)
-        v_low = np.zeros(pr.PARAM_COUNT)
-        v_low[mask] = x_low
+                x, f = sepcmaes(fb, dim, np.zeros(dim) + 0.02, gens, rng,
+                                pr.MAX_ABS_WEIGHT)
+                v = np.zeros(pr.PARAM_COUNT)
+                if mask is None:
+                    v = x
+                else:
+                    v[mask] = x
+                best.append(v)
+                print(f"    {tag} restart {r}: train={f:+.4f}", flush=True)
+            return best
 
+        opt = {}
+        for k, m in masks.items():
+            print(f"  [{k}-param]")
+            opt[f"low-dim ({k} params)"] = optimise(len(m), m, f"{k}p")
         print("  [full]")
-        x_full, _ = sepcmaes(fb_full, pr.PARAM_COUNT,
-                             np.zeros(pr.PARAM_COUNT) + 0.02, gens, rng,
-                             pr.MAX_ABS_WEIGHT)
+        opt[f"full ({pr.PARAM_COUNT} params)"] = optimise(pr.PARAM_COUNT, None, "full")
 
-        LOW = f"low-dim ({len(mask)} params)"
         FULL = f"full ({pr.PARAM_COUNT} params)"
-        arms = {"zero (no-op)": np.zeros(pr.PARAM_COUNT),
-                "hand-set (3 weights)": hand_set(spec, pr),
-                LOW: v_low, FULL: x_full}
+        ZERO, HAND = "zero (no-op)", "hand-set (3 weights)"
+        arms = {ZERO: [np.zeros(pr.PARAM_COUNT)], HAND: [hand_set(spec, pr)]}
+        arms.update(opt)
+
         res, ep = {}, {}
-        print(f"\n{'arm':30s} {'utility':>9s} {'catastrophe':>12s}")
-        for name, vec in arms.items():
-            u, cat, rows = pool.full(vec, HOLD)
-            res[name] = {"utility": float(u), "catastrophe": float(cat)}
-            ep[name] = rows
+        print(f"\n{'arm':30s} {'utility':>9s} {'catastrophe':>12s}  (srednia po restartach)")
+        for name, vecs in arms.items():
+            per = [pool.full(v, HOLD) for v in vecs]
+            ep[name] = [rows for _, _, rows in per]
+            u = float(np.mean([x[0] for x in per]))
+            cat = float(np.mean([x[1] for x in per]))
+            res[name] = {"utility": u, "catastrophe": cat, "n_restarts": len(vecs),
+                         "utility_per_restart": [float(x[0]) for x in per]}
             print(f"{name:30s} {u:9.4f} {cat:12.3f}")
-        vectors = {name: [float(x) for x in np.asarray(v)] for name, v in arms.items()}
+        vectors = {n: [[float(x) for x in np.asarray(v)] for v in vs]
+                   for n, vs in arms.items()}
     finally:
         pool.close()
 
     from neurofold8 import reward  # noqa: E402
     cal = json.loads((env_dir / "reward_calibration.json").read_text())["calibration"]
 
-    def share_of(rows_arm, rows_zero, rows_full):
-        """Ratio of gains, both measured against the same no-op anchor."""
-        u_a, _, _ = reward.robust_utility(rows_arm, cal)
-        u_z, _, _ = reward.robust_utility(rows_zero, cal)
-        u_f, _, _ = reward.robust_utility(rows_full, cal)
-        return (u_a - u_z) / (u_f - u_z) if u_f != u_z else float("nan")
+    def arm_utility(rows_per_restart, r_idx, e_idx):
+        """Mean utility across the drawn restarts, each on the drawn episodes."""
+        vals = []
+        for r in r_idx:
+            rows = [rows_per_restart[r % len(rows_per_restart)][i] for i in e_idx]
+            vals.append(reward.robust_utility(rows, cal)[0])
+        return float(np.mean(vals))
 
     def boot_share(name, n=4000, seed=311):
-        """Paired bootstrap over episodes: every arm ran the same seeds (CRN),
-        so episodes are resampled jointly and the full nonlinear utility is
-        recomputed per draw."""
+        """Hierarchical bootstrap: restarts resampled, then episodes resampled.
+        Every arm ran the same hold-out seeds under CRN, so episode indices are
+        drawn once per draw and shared, and the full nonlinear utility is
+        recomputed from scratch on every draw."""
         rng_b = np.random.default_rng(seed)
-        m = len(HOLD)
-        vals = []
+        m, out_v = len(HOLD), []
+        n_r = max(len(ep[name]), len(ep[FULL]))
         for _ in range(n):
-            idx = rng_b.integers(0, m, m)
-            vals.append(share_of([ep[name][i] for i in idx],
-                                 [ep["zero (no-op)"][i] for i in idx],
-                                 [ep[FULL][i] for i in idx]))
-        v = np.asarray(vals, float)
+            e_idx = rng_b.integers(0, m, m)
+            r_idx = rng_b.integers(0, n_r, n_r)
+            u_a = arm_utility(ep[name], r_idx, e_idx)
+            u_z = arm_utility(ep[ZERO], r_idx, e_idx)
+            u_f = arm_utility(ep[FULL], r_idx, e_idx)
+            if u_f != u_z:
+                out_v.append((u_a - u_z) / (u_f - u_z))
+        v = np.asarray(out_v, float)
         v = v[np.isfinite(v)]
         return float(np.quantile(v, 0.025)), float(np.quantile(v, 0.975))
 
-    base = res["zero (no-op)"]["utility"]
+    base = res[ZERO]["utility"]
     full_gain = res[FULL]["utility"] - base
-    out = {"task": a.task, "threshold": A3_THRESHOLD, "n_lowdim_params": int(len(mask)),
-           "budget_episodes": a.budget, "holdout_seeds": [HOLD[0], HOLD[-1]],
+    out = {"task": a.task, "threshold": A3_THRESHOLD,
+           "lowdim_sizes": {k: int(len(m)) for k, m in masks.items()},
+           "budget_episodes": a.budget, "restarts": a.runs,
+           "holdout_seeds": [HOLD[0], HOLD[-1]],
            "n_holdout": len(HOLD), "arms": res, "vectors": vectors}
     print()
     for name in arms:
-        if "zero" in name:
+        if name == ZERO:
             continue
         share = (res[name]["utility"] - base) / full_gain if full_gain else float("nan")
         lo, hi = boot_share(name)
@@ -176,10 +218,13 @@ def main():
         print(f"  {name:30s} osiaga {100*share:6.1f}% zysku pelnej polityki   "
               f"95% CI [{100*lo:.1f}%, {100*hi:.1f}%]")
 
-    low_share = res[LOW]["share_of_full_gain"]
-    hand_share = res["hand-set (3 weights)"]["share_of_full_gain"]
-    worst = max(low_share, hand_share)
-    worst_name = LOW if low_share >= hand_share else "hand-set (3 weights)"
+    # Only controllers with <=40 parameters gate the verdict, per the spec.
+    gating = {HAND: res[HAND]["share_of_full_gain"]}
+    for k, m in masks.items():
+        if len(m) <= 40:
+            gating[f"low-dim ({k} params)"] = res[f"low-dim ({k} params)"]["share_of_full_gain"]
+    worst_name = max(gating, key=gating.get)
+    worst = gating[worst_name]
     # Three-valued verdict, matching the standard every other gate in this
     # project already uses. The threshold stays at 95%; what is added is the
     # uncertainty treatment A3 lacked. A point estimate landing on the

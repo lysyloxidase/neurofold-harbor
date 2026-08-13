@@ -86,8 +86,8 @@
     "path_thresh": 2.2,
     "eta_repair": 0.012,
     "damage_cap": 2.5,
-    "path_inter": 0.55,
-    "path_intra": 0.22,
+    "path_inter": 0.0,
+    "path_intra": 0.0,
     "path_nucleus": 0.4,
     "path_locked": 0.3,
     "salt_context_weight": 0.45,
@@ -147,7 +147,10 @@
     "eps_zip": 5.0,
     "zip_sharp": 2.0,
     "zip_max_partners": 2,
-    "ladder_mod_block": 0.5
+    "ladder_mod_block": 0.5,
+    "path_exp": 2.0,
+    "path_crit_age": 8.0,
+    "path_norm": 75.0
   },
   "conditions": {
     "crowding": [
@@ -290,5 +293,22 @@
     "ladder_mod_block": 0.5,
     "rule": "Fixed by rule before measurement: a rung counts as blocked once its attractive interaction is suppressed by more than half. Not fitted to any outcome.",
     "consequence": "With mod_gain=0.85 and mod_decay=0.8 one action holds a rung blocked for ~3 steps, so roughly 3 of ~7 rungs can be held at once. Which rungs, and when, becomes the control problem; the nucleus term (weight 0.4) makes the rung that splits the longest run the high-value target."
+  },
+  "_pathology_v9": {
+    "revision": "post-A3 design revision, made after A3 failed and disclosed as such",
+    "before": "path = path_inter*inter + path_intra*intra + path_nucleus*(n_run-L_min+1) + path_locked*locked_core; driven by the length of the single longest run, so shortening it anywhere paid the same",
+    "after": "path = path_nucleus * sum over CRITICAL runs of (len-L_min+1)^path_exp / path_norm + path_locked * locked_in_critical",
+    "convexity": "path_exp=2.0 makes splitting a run mid-way worth ~7x trimming its end for an 8-rung run, while the two rungs look identical edge by edge",
+    "decoys": "a run is critical only once its mean contact age reaches path_crit_age; younger runs are ladder-positive, observationally identical and worth nothing, but still cost budget and can cost damage",
+    "dynamic": "disrupting a nucleus resets its age and promotes whichever rival nucleus grew unattended, so the critical target moves during the episode",
+    "path_crit_age_rule": "tau_mat / 4 = 8: pathologically relevant once persisted a quarter of the time needed to lock. Rule, not a fit.",
+    "path_norm_rule": "chosen so the no-op trajectory reproduces the mean final pathology of the previous definition, so path_thresh and the damage coupling keep their meaning",
+    "path_norm_measured": {
+      "rule": "path_norm anchors the uncontrolled trajectory at the damage threshold: the no-op mean final pathology equals path_thresh, so doing nothing is exactly marginal.",
+      "superseded_rule": "The first rule \u2014 reproduce the previous definition's no-op mean of 1.609 \u2014 is INFEASIBLE and was abandoned. Pathology feeds damage, damage shortens episodes, and shorter episodes suppress pathology, so raising path_norm lengthens episodes and regenerates what it removed. The no-op mean floors near 2.1 while path_norm runs away past 123.",
+      "target": 2.2,
+      "path_norm": 75.0,
+      "achieved_noop_mean": 2.207
+    }
   }
 }
