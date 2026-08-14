@@ -242,9 +242,9 @@ def main():
         verd = V.INCONCLUSIVE
         note = ("The confidence interval straddles the 95% threshold: this hold-out cannot "
                 "decide whether the architecture is necessary. Not evidence that it is.")
-    out.update({"low_dim_share": low_share, "hand_set_share": hand_share,
-                "binding_arm": worst_name, "binding_share_ci95": [lo, hi],
-                "verdict": verd, "note": note})
+    out.update({"gating_arms": {k: float(v) for k, v in gating.items()},
+                "binding_arm": worst_name, "binding_share": float(worst),
+                "binding_share_ci95": [lo, hi], "verdict": verd, "note": note})
     print(f"\nA3: {verd}   (prog: tania polityka musi zostac PONIZEJ "
           f"{100*A3_THRESHOLD:.0f}%; wiazace ramie: {worst_name} = {100*worst:.1f}%, "
           f"95% CI [{100*lo:.1f}%, {100*hi:.1f}%])")
