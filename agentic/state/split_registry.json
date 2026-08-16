@@ -36,7 +36,7 @@
     "final_test": "generated at freeze, range 900000+"
   },
   "v7_final_test": "CONTAMINATED - never reused",
-  "updated_utc": "2026-08-16T08:38:07.595712+00:00",
+  "updated_utc": "2026-08-16T10:04:42.901208+00:00",
   "tasks": {
     "alzheimer-abeta42-v8": {
       "final_test_generated": true,

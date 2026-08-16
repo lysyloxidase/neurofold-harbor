@@ -69,6 +69,21 @@ def audit_task(t):
                                          else "FAIL " + str({k: len(v) for k, v in bad.items() if v}))
     r["n_final_seeds"] = len(fin)
 
+    # H10 the agent trains on the same physics it is scored on.
+    # Never checked before: neurofold8/ exists in ten copies (five tasks x
+    # environment/tests) with no single source of truth, so a fix must be applied
+    # ten times by hand, and any drift between environment/ and tests/ would
+    # silently train an agent on different dynamics than the verifier scores.
+    import hashlib as _h
+    drift = []
+    for f in sorted((T / "environment/neurofold8").glob("*.py")):
+        other = T / "tests/neurofold8" / f.name
+        if not other.exists():
+            drift.append(f"{f.name}: missing in tests/")
+        elif _h.sha256(f.read_bytes()).digest() != _h.sha256(other.read_bytes()).digest():
+            drift.append(f.name)
+    r["checks"]["H10_env_tests_identical"] = "PASS" if not drift else f"FAIL {drift}"
+
     # freeze integrity: seed hash + reference hash recorded in the hidden profile
     a = hid["frozen_anchors"]
     seed_h = hashlib.sha256(json.dumps(sorted(fin), separators=(",", ":")).encode()).hexdigest()

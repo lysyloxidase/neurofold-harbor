@@ -36,11 +36,6 @@
       "weight": 0.3
     }
   ],
-  "salt_bridge": {
-    "donor_residue": 22,
-    "acceptor_residue": 27,
-    "note": "D23-K28 in 1-based numbering; effect is context dependent, see mechanism"
-  },
   "physics": {
     "b0": 1.0,
     "k_bond": 12.0,
@@ -282,5 +277,6 @@
     "normalised": {
       "elastic_limit": "20.13 = p90 of the no-op E_bond+E_angle distribution under the current chemistry. Rule: charge irreversible damage only for geometry beyond the 90th percentile of the UNCONTROLLED working range. This reproduces the original Abeta42 value (20.0 vs p90 20.13); the '1.418x median' multiple used earlier was a post-hoc description, not the rule."
     }
-  }
+  },
+  "_removed_salt_bridge": "Declared but read by no code, and copied verbatim into tau, TDP-43 and alpha-synuclein, where those positions are unrelated residues. Removed rather than left as an unimplemented biological claim that reads like a justification."
 }

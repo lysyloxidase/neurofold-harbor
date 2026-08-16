@@ -38,6 +38,15 @@ measures anything at all.
 > decidable. An information-level test on 88 236 counterfactuals puts a local probe at
 > **AUC 0.806** and two rounds of graph aggregation at **0.817** — a gain of **+0.011**.
 >
+> **The Monte Carlo sampler also has three defects.** Every proposal within a step was the
+> same displacement vector; acceptance draws were reused across steps, 480 decisions from 98
+> numbers; and the re-formation penalty was charged asymmetrically, so the chain had no
+> stationary distribution. They are fixed on the branch `v8.1-physics-fixes` with regression
+> tests — and the fix **breaks the task**: targeted and blind intervention become
+> indistinguishable (catastrophe 0.78 vs 0.81) and the frozen reference scores 0.00076.
+> v8.0's physical parameters were implicitly fitted to the broken sampler. Correcting it
+> honestly requires recalibrating the whole damage and reward model, which is not done here.
+>
 > Full evidence, with every number and how it was produced:
 > **[`agentic/reports/audits/v8.0_shortcut_finding.md`](agentic/reports/audits/v8.0_shortcut_finding.md)**
 >
@@ -273,6 +282,15 @@ Stated rather than hidden. None of these were tuned away.
   *anti-correlated* with it (r = −0.73).
 * **Porting-gate development seeds overlap the public validation split** (2000–2047 contains
   2000–2031), so P1–P8 design decisions were measured on the episodes agents select models on.
+* **The sampler has three defects and the calibration compensates for them.** Fixed on
+  `v8.1-physics-fixes`; the fix breaks the task, which is the finding. See the correction above.
+* **Coarse-graining is below the scale of the mechanism.** At 5 residues per bead the
+  nucleating hexapeptides occupy ~1 bead (KLVFF 1.0, VQIINK 1.2, VQIVYK 1.2), so steric-zipper
+  interdigitation is not representable. `align` uses `|cos|`, so parallel and antiparallel
+  registers are indistinguishable to the energy model.
+* **No external validation.** Nothing is calibrated against an experimental observable, and no
+  test checks that the model reproduces a known ordering (polyQ repeat length, Aβ42 vs Aβ40,
+  PHF6 versus a non-aggregating fragment).
 
 * **TDP-43 P8 = FAIL.** The best of six hand-coded probe policies left 16.7% of episodes
   catastrophic against a 10% threshold. The verdict was not re-opened. A learned controller,
