@@ -17,8 +17,11 @@ So this repository is two things, and the second is the more useful one:
    five (Aβ42, TDP-43) still discriminate; three do not.
 2. **A validation study with a negative result**, plus the instruments that produced it —
    an effective-dimensionality gate, an ablation verifier, an action-order gate, an
-   information-level aliasing test, and simulator invariants. None of these existed in the
-   released version, and each one found a real defect.
+   information-level aliasing test, simulator invariants, and an external-validity test
+   against the aggregation literature. None of these existed in the released version. Each
+   found a real defect, except the last, which the model **passes 4/4**: a shuffled sequence
+   of identical composition aggregates 3.3× less, so the chemistry is sequence-order
+   sensitive rather than composition-blind.
 
 Every number below is reproducible from a named command — see
 [Verifying the claims](#verifying-the-claims).
@@ -303,9 +306,11 @@ Stated rather than hidden. None of these were tuned away.
   nucleating hexapeptides occupy ~1 bead (KLVFF 1.0, VQIINK 1.2, VQIVYK 1.2), so steric-zipper
   interdigitation is not representable. `align` uses `|cos|`, so parallel and antiparallel
   registers are indistinguishable to the energy model.
-* **No external validation.** Nothing is calibrated against an experimental observable, and no
-  test checks that the model reproduces a known ordering (polyQ repeat length, Aβ42 vs Aβ40,
-  PHF6 versus a non-aggregating fragment).
+* **External validity is qualitative only.** The model now passes four pre-registered ordering
+  tests against the aggregation literature (`_dev/test_biological_ordering.py`, 4/4 PASS),
+  including sequence order versus composition. But no rate, threshold or absolute magnitude is
+  calibrated against experiment, aggregation kinetics are untested, and this validates the
+  energy model rather than the control task.
 
 * **TDP-43 P8 = FAIL.** The best of six hand-coded probe policies left 16.7% of episodes
   catastrophic against a 10% threshold. The verdict was not re-opened. A learned controller,
@@ -367,6 +372,7 @@ Nothing here asks to be taken on trust. Each claim maps to a command and to a st
 | local edge features suffice; aggregation adds +0.011 AUC | `python3 _dev/gate_aliasing.py --task alzheimer-abeta42-v8` | `agentic/reports/validation/aliasing_alzheimer-abeta42-v8.json` |
 | the sampler defects, and that fixing them breaks the task | `git checkout v8.1-physics-fixes && python3 _dev/test_physics.py alzheimer-abeta42-v8` | branch `v8.1-physics-fixes`, commit message carries the measured table |
 | four redesigns failed to remove the shortcut | branch `v9.1-relational-composition` | commit messages carry each redesign and its result |
+| the chemistry reproduces four known aggregation orderings | `python3 _dev/test_biological_ordering.py` | `agentic/reports/validation/biological_ordering.json` |
 
 The 3-weight policy that saturates three tasks is not a special harness: it is a normal
 `policy.json` satisfying the published artifact contract, built by setting three weights of

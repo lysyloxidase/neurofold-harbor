@@ -1,0 +1,90 @@
+{
+  "seeds": [
+    8000,
+    8063
+  ],
+  "n_seeds": 64,
+  "cases": {
+    "P-A  order vs composition": {
+      "high": "ordered",
+      "low": "scrambled",
+      "beads_high": 9,
+      "beads_low": 9,
+      "pathology_high": 1.6178750000000002,
+      "pathology_low": 0.494375,
+      "delta": 1.1235000000000002,
+      "ci95": [
+        0.9081218750000001,
+        1.3425000000000002
+      ],
+      "negligible_band": 0.16178750000000003,
+      "verdict": "PASS"
+    },
+    "P-B  Abeta42 vs C-term knockout": {
+      "high": "Abeta42",
+      "low": "I41A42>GS",
+      "beads_high": 9,
+      "beads_low": 9,
+      "pathology_high": 1.6178750000000002,
+      "pathology_low": 0.8227500000000001,
+      "delta": 0.7951250000000001,
+      "ci95": [
+        0.5892468750000001,
+        1.0081281249999998
+      ],
+      "negligible_band": 0.16178750000000003,
+      "verdict": "PASS"
+    },
+    "P-B* Abeta42 vs Abeta40 (CONFOUNDED: 9 vs 8 beads)": {
+      "high": "Abeta42",
+      "low": "Abeta40",
+      "beads_high": 9,
+      "beads_low": 8,
+      "pathology_high": 1.6178750000000002,
+      "pathology_low": 1.197,
+      "delta": 0.4208750000000001,
+      "ci95": [
+        0.15049687500000003,
+        0.6936250000000002
+      ],
+      "negligible_band": 0.16178750000000003,
+      "verdict": "PASS"
+    },
+    "P-C  polyQ36 vs polyQ20": {
+      "high": "Q36",
+      "low": "Q20",
+      "beads_high": 13,
+      "beads_low": 13,
+      "pathology_high": 0.15206419999999998,
+      "pathology_low": 0.03004938125,
+      "delta": 0.12201481875,
+      "ci95": [
+        0.10635911546874999,
+        0.13773988726562497
+      ],
+      "negligible_band": 0.015206419999999998,
+      "verdict": "PASS"
+    },
+    "P-D  PHF6 vs PHF6-proline": {
+      "high": "PHF6",
+      "low": "VQPVYK",
+      "beads_high": 11,
+      "beads_low": 11,
+      "pathology_high": 0.048639641250000004,
+      "pathology_low": 0.021717725625,
+      "delta": 0.026921915625,
+      "ci95": [
+        0.023661693109374996,
+        0.030184330218749996
+      ],
+      "negligible_band": 0.004863964125000001,
+      "verdict": "PASS"
+    }
+  },
+  "tally": {
+    "PASS": 4,
+    "INCONCLUSIVE": 0,
+    "FAIL": 0
+  },
+  "note": "Predictions were fixed before the run. A FAIL means the model does not reproduce an ordering that is not in dispute in the literature, and is reported as such."
+}
