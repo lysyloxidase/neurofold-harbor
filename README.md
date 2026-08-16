@@ -8,6 +8,44 @@ Each task ships a frozen simulator, a frozen challenge reference policy that anc
 1.0, a hidden evaluation split, and the full validation record that decides whether the task
 measures anything at all.
 
+---
+
+> ## ⚠ Correction to the v8.0.0 release
+>
+> **This benchmark does not require relational reasoning, and the v8.0.0 release said it
+> did.** Measurement after release contradicted the claim.
+>
+> A policy with **3 non-zero weights out of 2541**, hand-written and never trained, scores
+> **1.0 through the released verifier on three of the five tasks** (HTT, α-synuclein, tau)
+> and 0.795 / 0.581 on the other two. On HTT it beats the frozen challenge reference
+> outright, on both reward and safety.
+>
+> The claim rested on gate A1, which compares a full graph controller against the *same
+> controller with its edges zeroed* — a crippled graph controller, never a cheap one. Both
+> arms lose to the three weights. Gate A3, specified precisely to catch this, was never run
+> for v8.0.
+>
+> Two further defects were measured. The reward's largest-weighted term,
+> `pathology_reduction`, contributes **0.1%–24%** of the reference's advantage and
+> **−101.6%** on α-synuclein, because pathology was not controllable at all under v8.0
+> physics: `beta_ladder()` decides ladder membership from geometry, while the agent's only
+> lever modulates energy, and the two were never connected. And the porting gate's
+> development seeds (2000–2047) fully contain the public validation split (2000–2031).
+>
+> Four attempts to redesign the benchmark so relational structure *would* be necessary all
+> failed, in a way that now looks structural: in a coarse-grained contact-selection task, a
+> contact's pathological status is a local property, so the choice of target is locally
+> decidable. An information-level test on 88 236 counterfactuals puts a local probe at
+> **AUC 0.806** and two rounds of graph aggregation at **0.817** — a gain of **+0.011**.
+>
+> Full evidence, with every number and how it was produced:
+> **[`agentic/reports/audits/v8.0_shortcut_finding.md`](agentic/reports/audits/v8.0_shortcut_finding.md)**
+>
+> The `v8.0.0` tag is left as released, as the historical record. What the tasks *do*
+> measure is described in [What this measures](#what-this-measures) below.
+
+---
+
 ## Purpose
 
 Most protein-ML benchmarks score a *prediction* against a known answer. This one scores a
@@ -15,19 +53,23 @@ Most protein-ML benchmarks score a *prediction* against a known answer. This one
 what the agent already did.
 
 The design question behind it: what does an agent have to be able to do that a static
-predictor cannot? Three properties are built in deliberately and then *tested for*, not
-assumed:
+predictor cannot? Three properties were built in deliberately and then *tested for*. One of
+the three did not survive the test.
 
-* **Relational reasoning** — the class-interaction matrix is non-separable (σ₂/σ₁ = 0.87), so
-  the energetic consequence of a contact cannot be recovered from the two beads' own
-  features. Partner identity carries information.
-* **Order dependence** — maturation and locking are hysteretic (τ_mat = 32). The same action
-  multiset applied in a different order gives a different outcome.
-* **Acting under partial observability** — latent oxidative stress and chaperone capacity are
-  never observed, and crowding drifts upward, so the window for cheap intervention closes.
+* **Relational reasoning** — ~~necessary~~ **not necessary; claim withdrawn.** The
+  class-interaction matrix is non-separable (σ₂/σ₁ = 0.87), so the energetic consequence of a
+  contact genuinely cannot be recovered from the two beads' own features. That is a property
+  of the *energy model*, and it does not transfer to the *decision*: choosing which contact to
+  act on is locally decidable, and three hand-set weights exploit exactly that. See the
+  correction above.
+* **Order dependence** — **holds.** Maturation and locking are hysteretic (τ_mat = 32).
+  Permuting an identical action multiset changes the outcome in **100%** of episodes,
+  mean |ΔU| = 0.0703, 95% CI [0.0368, 0.1262] (gate A6, `_dev/gate_a6.py`).
+* **Acting under partial observability** — **holds by construction**, though not separately
+  gated: latent oxidative stress and chaperone capacity are never observed, and crowding
+  drifts upward, so the window for cheap intervention closes.
 
-Every one of these claims is checked by a gate that can fail, and one of them did fail — see
-[Validation status](#validation-status). A benchmark whose difficulty is asserted rather than
+A benchmark whose difficulty is asserted rather than
 measured is not a benchmark; the validation harness in `_dev/` and the evidence in `agentic/`
 are as much the deliverable as the tasks.
 
@@ -174,13 +216,20 @@ both Docker builds, oracle reward = 1.0, malformed-artifact rejection, no hidden
 into `environment/`, split disjointness, freeze-hash integrity. Machine-readable:
 [`agentic/reports/audits/final_audit.json`](agentic/reports/audits/final_audit.json).
 
-| task | oracle reward | porting gate | A1 relational necessity |
-|---|--:|---|---|
-| `alzheimer-abeta42-v8` | 1.0 | 8/8 PASS | **PASS** (+0.557, 95% CI [+0.126, +0.698]) |
-| `huntington-htt-polyq-v8` | 1.0 | 8/8 PASS | INCONCLUSIVE (+0.200, 95% CI [−0.120, +0.432]) |
-| `alzheimer-tau-v8` | 1.0 | 8/8 PASS | not run |
-| `parkinson-alpha-synuclein-v8` | 0.999999999953 | 7 PASS, 1 INCONCLUSIVE (P7) | not run |
-| `als-ftd-tdp43-v8` | 1.0 | 6 PASS, 1 INCONCLUSIVE (P7), **1 FAIL (P8)** | not run |
+| task | oracle reward | porting gate | 3-weight policy scores | A1 (full GNN vs edge-ablated GNN) |
+|---|--:|---|--:|---|
+| `alzheimer-abeta42-v8` | 1.0 | 8/8 PASS | 0.795 | PASS (+0.557, 95% CI [+0.126, +0.698]) |
+| `huntington-htt-polyq-v8` | 1.0 | 8/8 PASS | **1.000** (ext. 1.562) | INCONCLUSIVE (+0.200, 95% CI [−0.120, +0.432]) |
+| `alzheimer-tau-v8` | 1.0 | 8/8 PASS | **1.000** | not run |
+| `parkinson-alpha-synuclein-v8` | 0.999999999953 | 7 PASS, 1 INCONCLUSIVE (P7) | **1.000** | not run |
+| `als-ftd-tdp43-v8` | 1.0 | 6 PASS, 1 INCONCLUSIVE (P7), **1 FAIL (P8)** | 0.581 | not run |
+
+The A1 column is kept for the record but **does not support a necessity claim**: its ablation
+arm is the same graph controller with its edge embedding zeroed, so it measures "full GNN
+versus damaged GNN". Both arms lose to the 3-weight policy in the column beside it. The gate
+that would have tested necessity, A3, was specified in
+[`ACCEPTANCE_CRITERIA.md`](agentic/specs/ACCEPTANCE_CRITERIA.md) and never run for v8.0; when
+finally run it **failed**, and kept failing across four redesigns.
 
 α-synuclein's shortfall from 1.0 is 5×10⁻¹¹ — float rounding inside the container against the
 host-measured anchor. The audit tolerance is 1e-9.
@@ -194,9 +243,36 @@ Verdicts are **three-valued** — PASS / INCONCLUSIVE / FAIL. A confidence inter
 zero means insufficient power, not evidence of absence; conflating the two would have silently
 passed off two null results as findings.
 
+## What this measures
+
+Not relational reasoning — see the correction at the top. What the tasks do measure, and what
+survives the audit:
+
+control of a **stochastic, partially observed, hysteretic process under a finite action
+budget**, where the order of interventions changes the outcome in 100% of episodes and a heavy
+damage tail punishes optimising the average. The utility is deliberately not a mean:
+`U = 0.60·mean + 0.40·q₂₀ − 1.50·catastrophe_rate`.
+
+That is a real control problem. It is simply not the problem the v8.0.0 README claimed, and
+three of the five tasks are additionally saturated by a trivial policy, so only Aβ42 and
+TDP-43 discriminate at all.
+
 ## Limitations
 
 Stated rather than hidden. None of these were tuned away.
+
+* **Three of five tasks are saturated by a 3-weight policy** (HTT, α-synuclein, tau all score
+  1.0). Only `alzheimer-abeta42-v8` (0.795) and `als-ftd-tdp43-v8` (0.581) discriminate. Use
+  those two if you want signal; the other three currently measure nothing above a trivial
+  baseline.
+* **HTT's challenge reference is weaker than a 3-weight policy** on both reward (extended
+  1.562) and catastrophe rate (34.4% vs 24.2%). Its upper anchor is not a challenge.
+* **The reward's largest-weighted term barely moves.** `pathology_reduction` (weight 0.34)
+  contributes 0.1%–24% of the reference's advantage and −101.6% on α-synuclein, because
+  pathology is not controllable under v8.0 physics. The energy terms that do the work are
+  *anti-correlated* with it (r = −0.73).
+* **Porting-gate development seeds overlap the public validation split** (2000–2047 contains
+  2000–2031), so P1–P8 design decisions were measured on the episodes agents select models on.
 
 * **TDP-43 P8 = FAIL.** The best of six hand-coded probe policies left 16.7% of episodes
   catastrophic against a 10% threshold. The verdict was not re-opened. A learned controller,
@@ -206,12 +282,17 @@ Stated rather than hidden. None of these were tuned away.
   [`agentic/reports/audits/tdp43_final_report.md`](agentic/reports/audits/tdp43_final_report.md).
 * **α-synuclein P7 = INCONCLUSIVE.** Order effect d = −0.014, 95% CI [−0.175, +0.147] at 96
   development seeds: limited power, not absence of hysteresis.
-* **A1 was run on two tasks only.** Relational necessity is *demonstrated* on Aβ42 and *not
-  demonstrated either way* on HTT. It is unmeasured on tau, α-synuclein and TDP-43.
-* **A2–A5 and A8 are unrun.** History necessity, effective dimensionality, RL-vs-black-box and
+* **A1 does not demonstrate what it was cited for.** It compares a full graph controller
+  against an edge-ablated one — not against a cheap controller — and was run on two tasks
+  only. Both of its arms lose to a 3-weight policy.
+* **A3 failed, four times.** The effective-dimensionality gate was unrun for v8.0. Run
+  afterwards it failed on v8.0 and on three successive redesigns; an information-level test
+  on 88 236 counterfactuals then put two rounds of graph aggregation at **+0.011 AUC** over
+  per-edge features.
+* **A2, A4, A5 and A8 remain unrun.** History necessity, RL-vs-black-box and
   precision-stability gates are specified in
-  [`agentic/specs/ACCEPTANCE_CRITERIA.md`](agentic/specs/ACCEPTANCE_CRITERIA.md) but were not
-  executed for v8.
+  [`agentic/specs/ACCEPTANCE_CRITERIA.md`](agentic/specs/ACCEPTANCE_CRITERIA.md) and were not
+  executed. A3 and A6 have since been implemented (`_dev/gate_a3.py`, `_dev/gate_a6.py`).
 * **The reference is an anchor, not an optimum, and its strength varies a lot by task.** On the
   hidden shifted regime the frozen reference leaves a catastrophe rate of 6.2% on Aβ42 but
   34.4% on HTT. Reward 1.0 means "matched this task's reference", so the tasks are not equally

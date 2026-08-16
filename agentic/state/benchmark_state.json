@@ -1,6 +1,6 @@
 {
   "benchmark": "NeuroFold-Harbor v8",
-  "updated_utc": "2026-08-13T08:14:28.403759+00:00",
+  "updated_utc": "2026-08-16T08:38:07.595712+00:00",
   "stage": "PACKAGER",
   "golden_template": "alzheimer-abeta42-v8",
   "frozen": true,
@@ -198,7 +198,7 @@
       "event": "freeze re-opened, authorised by the task owner, to add the polar-zipper mechanism required by HTT; all pre-change anchors invalidated"
     },
     {
-      "utc": "2026-08-13T08:14:28.403759+00:00",
+      "utc": "2026-08-16T08:38:07.595712+00:00",
       "event": "all five tasks frozen on fresh disjoint final seeds under the post-change chemistry"
     }
   ],
@@ -206,5 +206,13 @@
     "v7_final_test": "CONTAMINATED \u2014 never reused in v8",
     "final_seeds": "generated only at freeze, never inspected during development",
     "post_freeze_tuning": "none \u2014 no reward, threshold, chemistry or model parameter was changed after any final-test result"
+  },
+  "post_release_corrections": {
+    "date": "2026-08-16",
+    "report": "agentic/reports/audits/v8.0_shortcut_finding.md",
+    "claim_withdrawn": "relational structure is NOT necessary; a 3-weight policy scores 1.0 on 3 of 5 tasks through the released verifier",
+    "code_fix": "GraphPolicy.act() no longer raises on an empty contact graph; it returns a no-op. Converts a crash into a score; cannot change any run that completes.",
+    "reaudited": "final_audit.py PASS 5/5, oracle 1.0 on all five tasks after the fix",
+    "unfixable": "Four redesigns failed to make relational structure necessary. The target choice is locally decidable in a coarse-grained contact-selection task."
   }
 }

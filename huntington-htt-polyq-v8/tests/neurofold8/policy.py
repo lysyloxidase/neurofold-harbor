@@ -156,6 +156,13 @@ class GraphPolicy:
 
     def act(self, vec, obs, hstate=None):
         logits, strength, _, hist, (ei, ej) = self.forward(vec, obs, hstate)
+        if len(ei) == 0:
+            # No contact is above the edge threshold: there is nothing to
+            # modulate. argmax on an empty array raises, which would abort a
+            # graded run instead of scoring it. Latent in practice — the
+            # shipped tasks hold at least 20 contacts under no-op — but a
+            # crash path in a verifier is not acceptable.
+            return (0, 0, 0.0), hist
         k = int(np.argmax(logits))
         return (int(ei[k]), int(ej[k]), float(strength[k])), hist
 
