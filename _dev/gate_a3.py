@@ -43,14 +43,20 @@ HOLD = list(range(7100, 7196))
 A3_THRESHOLD = 0.95
 
 
-def head_mask(spec, pr, target):
-    """Indices of a low-dimensional controller with about `target` parameters.
+def head_mask(spec, pr, channels):
+    """A message-passing-free readout with `channels` live edge features.
 
-    Parameters are added in a fixed priority order, so the 38-, 80- and
-    160-parameter arms are nested: the edge-selection readout first, then the
-    constant strength, then progressively more of the edge encoder. Everything
-    outside the mask stays zero, so none of these arms has message passing or
-    history — only a richer per-edge readout.
+    Built so that NOMINAL size equals EFFECTIVE size. The first version of this
+    mask took parameters in a flat priority order and was badly mislabelled:
+    because every encode weight is zero the node states are identically zero, so
+    the two thirds of `w_edge_sel` that multiply h[ei] and h[ej] are dead. A
+    nominally 38-parameter arm had 3 parameters that could move the action, and
+    a nominally 160-parameter arm had 83. Verified by
+    `_dev/verify_a3_masks.py`.
+
+    One channel = one row of W_edge (EDGE_DIM weights) + its bias + the
+    selection weight and the strength weight that read it: EDGE_DIM + 3 live
+    parameters. Plus a global constant strength bias.
     """
     probe = np.arange(pr.PARAM_COUNT, dtype=float)
     p = spec.unpack(probe)
@@ -58,22 +64,15 @@ def head_mask(spec, pr, target):
     def flat(x):
         return [int(v) for v in np.atleast_1d(np.asarray(x)).ravel()]
 
-    order = []
-    order += flat(p["w_edge_sel"])                                   # 36
-    order += flat(p["b_str"])                                        # +1
-    order += [int(np.atleast_2d(p["W_edge"])[0, pr.EDGE_DIM - 1])]   # +1  -> 38
-    order += flat(p["w_str"])                                        # +36
-    order += flat(p["b_edge_sel"])                                   # +1
-    order += flat(np.atleast_2d(p["W_edge"]))                        # rest of the encoder
-    order += flat(p["b_edge"])
-    seen, idx = set(), []
-    for v in order:
-        if v not in seen:
-            seen.add(v)
-            idx.append(v)
-        if len(idx) >= target:
-            break
-    return np.array(sorted(idx), dtype=int)
+    W_edge = np.atleast_2d(p["W_edge"])
+    b_edge = np.atleast_1d(np.asarray(p["b_edge"])).ravel()
+    idx = flat(p["b_str"])
+    for c in range(channels):
+        idx += flat(W_edge[c])                      # this channel reads the edge features
+        idx += [int(b_edge[c])]
+        idx += [int(np.atleast_1d(p["w_edge_sel"])[2 * spec.H + c])]
+        idx += [int(np.atleast_1d(p["w_str"])[2 * spec.H + c])]
+    return np.array(sorted(set(idx)), dtype=int)
 
 
 def hand_set(spec, pr):
@@ -106,8 +105,9 @@ def main():
                            msg=pr.MSG, layers=pr.LAYERS, hist_dim=pr.HIST_DIM,
                            hist_hidden=pr.HIST_HIDDEN)
 
-    masks = {k: head_mask(spec, pr, k) for k in (38, 80, 160)}
-    assert len(masks[38]) <= 40, f"gating arm has {len(masks[38])} parameters, spec says <=40"
+    # channels -> live parameters: 1 + channels*(EDGE_DIM+3)
+    masks = {c: head_mask(spec, pr, c) for c in (2, 5, 10)}
+    assert len(masks[2]) <= 40, f"gating arm has {len(masks[2])} parameters, spec says <=40"
     print(f"A3 — {a.task}")
     print(f"  low-dim arms: {[len(m) for m in masks.values()]} free parameters "
           f"of {pr.PARAM_COUNT}")
@@ -145,8 +145,8 @@ def main():
 
         opt = {}
         for k, m in masks.items():
-            print(f"  [{k}-param]")
-            opt[f"low-dim ({k} params)"] = optimise(len(m), m, f"{k}p")
+            print(f"  [{len(m)}-param]")
+            opt[f"low-dim ({len(m)} params)"] = optimise(len(m), m, f"{len(m)}p")
         print("  [full]")
         opt[f"full ({pr.PARAM_COUNT} params)"] = optimise(pr.PARAM_COUNT, None, "full")
 
@@ -204,7 +204,7 @@ def main():
     base = res[ZERO]["utility"]
     full_gain = res[FULL]["utility"] - base
     out = {"task": a.task, "threshold": A3_THRESHOLD,
-           "lowdim_sizes": {k: int(len(m)) for k, m in masks.items()},
+           "lowdim_sizes": {f"{c}ch": int(len(m)) for c, m in masks.items()},
            "budget_episodes": a.budget, "restarts": a.runs,
            "holdout_seeds": [HOLD[0], HOLD[-1]],
            "n_holdout": len(HOLD), "arms": res, "vectors": vectors}
@@ -222,7 +222,7 @@ def main():
     gating = {HAND: res[HAND]["share_of_full_gain"]}
     for k, m in masks.items():
         if len(m) <= 40:
-            gating[f"low-dim ({k} params)"] = res[f"low-dim ({k} params)"]["share_of_full_gain"]
+            gating[f"low-dim ({len(m)} params)"] = res[f"low-dim ({len(m)} params)"]["share_of_full_gain"]
     worst_name = max(gating, key=gating.get)
     worst = gating[worst_name]
     # Three-valued verdict, matching the standard every other gate in this

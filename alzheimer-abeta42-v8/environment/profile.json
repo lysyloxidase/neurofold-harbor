@@ -6,7 +6,7 @@
   "sequence": "DAEFRHDSGYEVHHQKLVFFAEDVGSNKGAIIGLMVGGVVIA",
   "sequence_source": "A-beta 42 peptide sequence (42 aa) from the APP amyloid-beta region",
   "bead_size": 5,
-  "n_chains": 2,
+  "n_chains": 3,
   "max_steps": 96,
   "benchmark_version": "8.0-pilot",
   "coordinate_system": "Region start/end are 0-based, half-open sequence slices [start,end).",
@@ -150,7 +150,8 @@
     "ladder_mod_block": 0.5,
     "path_exp": 2.0,
     "path_crit_age": 8.0,
-    "path_norm": 75.0
+    "path_norm": 24.625,
+    "path_L_crit": 3
   },
   "conditions": {
     "crowding": [
@@ -309,6 +310,24 @@
       "target": 2.2,
       "path_norm": 75.0,
       "achieved_noop_mean": 2.207
+    }
+  },
+  "_pathology_v9_1": {
+    "revision": "v9.1 relational composition, made after A3 failed a second time",
+    "removed_from_observation": "the per-edge `ladder` membership flag (EDGE_DIM 12 -> 11). It announced exactly what pathology counted, which is why a 3-parameter readout of that single flag reached 95% of the full policy's gain.",
+    "criticality": "a nucleus is critical when it spans at least path_L_crit=3 contiguous rungs AND its mean contact age reaches path_crit_age. Age alone no longer identifies a target: an old two-rung run is a decoy, contact-for-contact indistinguishable from a rung of a real nucleus.",
+    "L_crit_rule": "a productive amyloid seed spans at least three contiguous rungs; shorter contacts are transient. Fixed by rule before measurement.",
+    "bridges": "a ladder contact joining two DIFFERENT critical nuclei welds them into one assembly. Bridges carry no weight of their own \u2014 they act through the existing convexity, so two 4-rung nuclei welded by one bridge score (9-L_min+1)^2 = 64 instead of 2*(4-L_min+1)^2 = 18. Cutting the bridge is worth far more than cutting an isolated contact, and the two are locally identical.",
+    "why_not_a_separate_weight": "a bridge weight would be one more scalar for a per-edge readout to fit. Routing bridges through convexity means their value depends on the sizes of the two assemblies they join, which is not a property of the contact.",
+    "n_chains": {
+      "change": "2 -> 3",
+      "why": "With two chains the system is too small for cluster topology: bridges between distinct critical nuclei fired in 0.5% of snapshots under a ladder-pair definition and 6.4% under the widest sensible contact-based one, even though two or more critical nuclei coexisted in 35% of snapshots. A mechanism that fires in 6% of steps cannot carry a decision the benchmark is built on.",
+      "seeding": "The nucleation seed still registers chains 0 and 1. Chains beyond the pair start close enough to associate but are NOT pre-registered, so a second nucleus has to grow, and it can be welded to the first through the middle chain."
+    },
+    "path_norm": {
+      "rule": "no-op mean final pathology == path_thresh",
+      "value": 24.625,
+      "achieved": 2.217
     }
   }
 }

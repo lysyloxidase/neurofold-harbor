@@ -1,0 +1,23 @@
+{
+  "task": "alzheimer-abeta42-v8",
+  "horizon": 12,
+  "eps": 0.05,
+  "delta": 0.5,
+  "snapshots": 1056,
+  "n_pairs": 88236,
+  "n_local_features": 11,
+  "n_relational_features": 145,
+  "V_mean": 0.0013033574242404392,
+  "V_sd": 0.5526618930108594,
+  "frac_abs_V_gt_delta": 0.02552246248696677,
+  "local_ceiling_r2": 0.1299044315745772,
+  "local_probe_r2": 5.487993032615712e-05,
+  "relational_probe_r2": 0.001382845120702636,
+  "relational_gain": 0.0013279651903764789,
+  "verdict": "INCONCLUSIVE",
+  "note": "Neither branch of the pre-registered rule is met.",
+  "seeds": [
+    7300,
+    7395
+  ]
+}

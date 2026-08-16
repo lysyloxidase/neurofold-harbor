@@ -7,3 +7,4 @@ __pycache__/
 
 # build outputs: regenerable with `python3 _dev/package.py`
 dist/
+aliasing_samples_*.npz

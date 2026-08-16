@@ -19,11 +19,14 @@ from pathlib import Path
 
 import numpy as np
 
-SCHEMA = "neurofold-graph-policy-v8"
+SCHEMA = "neurofold-graph-policy-v9.1"
 MAX_ABS_WEIGHT = 30.0
 MAX_POLICY_BYTES = 786432          # 768 KiB
 HIDDEN, MSG, LAYERS = 12, 12, 2
-NODE_DIM, EDGE_DIM, HIST_DIM, HIST_HIDDEN = 25, 12, 40, 8
+# EDGE_DIM dropped 12 -> 11 in v9.1: the `ladder` membership flag was removed
+# from the observation. It let a 3-parameter readout reach 95% of the full
+# policy's gain, because it announced exactly what pathology counted.
+NODE_DIM, EDGE_DIM, HIST_DIM, HIST_HIDDEN = 25, 11, 40, 8
 
 
 def param_spec(node_dim=NODE_DIM, edge_dim=EDGE_DIM, hidden=HIDDEN, msg=MSG,

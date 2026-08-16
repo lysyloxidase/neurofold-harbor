@@ -90,7 +90,7 @@ class NeuroFoldV8Env:
         self._prepare_common_random_numbers()
         seed_prob = float(p.get("seed_register_prob", 0.0))
         self.seeded_pairs = []
-        if self.n_chains == 2 and rng.random() < seed_prob:
+        if self.n_chains >= 2 and rng.random() < seed_prob:
             # hand the agent an early-stage nucleation event to act on
             lo, hi = p.get("seed_register_len", [2, 4])
             L = int(rng.integers(lo, hi + 1))
@@ -100,7 +100,20 @@ class NeuroFoldV8Env:
                 jitter=p.get("seed_jitter", 0.06),
                 extend_noise=p.get("seed_extend_noise", 0.10),
                 theta0=p["theta0"])
-            self.x = np.vstack([xA, xB])
+            blocks = [xA, xB]
+            # Chains beyond the seeded pair start close enough to associate but
+            # are NOT pre-registered. With three chains two nuclei can coexist
+            # and be welded by a contact through the middle chain, which is what
+            # makes bridge-versus-isolated a decision the agent has to face.
+            for c in range(2, self.n_chains):
+                off = np.array([p["chain_separation"] * (0.9 + 0.2 * rng.random()),
+                                p.get("seed_gap", 1.0) * (c - 1), 0.0])
+                axis = np.array([0.0, 1.0, 0.0]) + 0.25 * rng.normal(size=3)
+                blocks.append(geom.init_chain_ideal(
+                    rng, self.n_per_chain, p["b0"], p["theta0"],
+                    start=xA[0] + off + rng.normal(0, 0.3, 3), axis=axis,
+                    dihedral_spread=p.get("init_dihedral_spread", np.pi)))
+            self.x = np.vstack(blocks)
             self.seeded_pairs = pairs
             self.seed_register_len = L
         else:
@@ -195,18 +208,86 @@ class NeuroFoldV8Env:
         crit_age = p.get("path_crit_age", 6.0)
         norm = p.get("path_norm", 1.0)
 
-        total, locked_crit = 0.0, 0.0
-        self._critical = np.zeros_like(lad, dtype=bool)
+        L_crit = int(p.get("path_L_crit", L_min))
+
+        # 1. critical nuclei: long enough AND mature enough. A run that is old
+        #    but short is a DECOY -- ladder-positive, indistinguishable contact
+        #    by contact, and worth nothing. Age alone therefore no longer
+        #    identifies a target; length is not a per-contact property.
+        crit_runs = []
         for run in self.energy.enumerate_runs(lad):
-            if len(run) < L_min:
+            if len(run) < L_crit:
                 continue
             if float(np.mean([self.age[a, b] for a, b in run])) < crit_age:
-                continue                    # decoy: ladder-positive, not pathological
-            total += (len(run) - L_min + 1.0) ** exp
+                continue
+            crit_runs.append(run)
+
+        # 2. bridges: a ladder contact joining beads of two DIFFERENT critical
+        #    nuclei welds them into one larger assembly. Bridges carry no weight
+        #    of their own -- they act through the convexity below, which is what
+        #    makes cutting a bridge worth far more than cutting an isolated
+        #    contact while the two look identical locally.
+        owner = {}
+        for k, run in enumerate(crit_runs):
+            for a, b in run:
+                owner.setdefault(a, []).append(k)
+                owner.setdefault(b, []).append(k)
+        parent = list(range(len(crit_runs)))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        # A weld is any CONTACT linking two distinct critical nuclei, not only a
+        # beta rung. Requiring the weld itself to be a rung made the mechanism
+        # inert: measured 0.5% of snapshots at two chains and 2.3% at three,
+        # against 6.4% for the contact-based definition. Physically an
+        # inter-nucleus contact is exactly what holds two protofilaments
+        # together; it need not be part of either register.
+        # Nuclei sharing a bead are already one assembly: with three chains the
+        # register between chains 0-1 and the register between chains 1-2 both
+        # run through the middle chain, which is exactly how protofilaments
+        # stack. Requiring a separate contact between them missed this entirely
+        # and left the mechanism firing in under 5% of snapshots.
+        for ks in owner.values():
+            for k in ks[1:]:
+                ra, rb = find(ks[0]), find(k)
+                if ra != rb:
+                    parent[ra] = rb
+
+        in_crit = {(a, b) for run in crit_runs for a, b in run}
+        bridges = 0
+        ii, jj = np.nonzero(self.contact > p["edge_threshold"])
+        for a, b in zip(ii.tolist(), jj.tolist()):
+            if (a, b) in in_crit or a not in owner or b not in owner:
+                continue
+            ra, rb = find(owner[a][0]), find(owner[b][0])
+            if ra != rb:
+                parent[ra] = rb
+                bridges += 1
+
+        # 3. one convex term per welded assembly
+        comp = {}
+        for k, run in enumerate(crit_runs):
+            comp.setdefault(find(k), []).append(len(run))
+        total = 0.0
+        for lens in comp.values():
+            eff = sum(lens) + (len(lens) - 1)      # rungs plus the welds holding them
+            total += (eff - L_min + 1.0) ** exp
+
+        locked_crit = 0.0
+        self._critical = np.zeros_like(lad, dtype=bool)
+        for run in crit_runs:
             for a, b in run:
                 self._critical[a, b] = self._critical[b, a] = True
                 if self.locked[a, b]:
                     locked_crit += 0.5
+        self._n_bridges = bridges
+        self._n_crit_runs = len(crit_runs)
+        self._n_assemblies = len(comp)
+        self._assembly_sizes = [sum(l) + (len(l) - 1) for l in comp.values()]
         return p["path_nucleus"] * total / norm + p["path_locked"] * locked_crit
 
     def _relax(self, x, i, n_steps=None):
@@ -456,8 +537,15 @@ class NeuroFoldV8Env:
             (self.chain_id[ei] == self.chain_id[ej]).astype(float),
             np.clip(self.age[ei, ej] / max(1, p["tau_mat"]), 0, 2),
             self.energy.MM[ei, ej],
-            self.aux["ladder"][ei, ej].astype(float),
         ])
+        # NOTE: `ladder` membership is deliberately NOT an edge feature.
+        # Through v9 it was, and it was a direct shortcut: pathology counted
+        # ladder rungs, the observation announced which contacts were rungs, and
+        # a 3-parameter readout of that one flag reached 95% of a trained
+        # 2541-parameter policy's gain. What decides the right action now --
+        # whether a rung sits in a CRITICAL nucleus, and whether it BRIDGES two
+        # pathological clusters -- is a property of the contact graph, not of
+        # any single contact, so it has to be aggregated rather than read off.
         return {"node": node, "edge_index": np.vstack([ei, ej]), "edge": edge,
                 "history": self.history.copy(),
                 "global": np.array([self.steps / self.max_steps,
