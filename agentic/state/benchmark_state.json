@@ -1,6 +1,6 @@
 {
   "benchmark": "NeuroFold-Harbor v8",
-  "updated_utc": "2026-08-16T10:04:42.901208+00:00",
+  "updated_utc": "2026-08-16T10:13:31.513080+00:00",
   "stage": "PACKAGER",
   "golden_template": "alzheimer-abeta42-v8",
   "frozen": true,
@@ -203,7 +203,7 @@
       "event": "freeze re-opened, authorised by the task owner, to add the polar-zipper mechanism required by HTT; all pre-change anchors invalidated"
     },
     {
-      "utc": "2026-08-16T10:04:42.901208+00:00",
+      "utc": "2026-08-16T10:13:31.513080+00:00",
       "event": "all five tasks frozen on fresh disjoint final seeds under the post-change chemistry"
     }
   ],

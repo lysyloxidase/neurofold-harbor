@@ -105,9 +105,17 @@ challenge reference controller anchors `1.0`. The reference is **not** claimed
 to be optimal — `metrics.json` also reports an uncapped `extended_score`, so
 policies stronger than the reference remain distinguishable.
 
-Optimize robust trajectory quality: reduce pathological register formation and
-keep safe occupancy high, while limiting irreversible damage, action expenditure
-and barrier costs.
+Optimize robust trajectory quality. Be aware of what the scored objective actually
+weights, measured rather than intended: the pathology term carries the largest
+nominal weight but contributes only 0.1%-24% of the frozen reference's advantage
+over no-op, because pathology is barely controllable under this physics. What the
+reward mostly pays for is lowering the coarse energy, keeping safe occupancy high,
+and avoiding irreversible damage, action expenditure and barrier costs. The energy
+terms are anti-correlated with the pathology term (r = -0.73).
+
+A hand-set 3-weight policy scores 1.0 on three of the five tasks. Full evidence and
+the withdrawn design claims are in
+`agentic/reports/audits/v8.0_shortcut_finding.md` in the repository.
 
 ## Limits
 

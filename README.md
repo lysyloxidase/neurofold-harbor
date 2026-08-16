@@ -1,12 +1,27 @@
 # NeuroFold-Harbor v8
 
-Five Harbor-compatible tasks that ask an agent to **control** a stochastic,
-sequence-conditioned coarse-grained conformational surrogate of an aggregation-competent
-protein region: suppress pathological β-register formation without damaging the chain.
+**A benchmark, and the measurement that showed it does not test what it was built to test.**
 
-Each task ships a frozen simulator, a frozen challenge reference policy that anchors reward
-1.0, a hidden evaluation split, and the full validation record that decides whether the task
-measures anything at all.
+Five Harbor-compatible tasks ask an agent to control a stochastic, coarse-grained
+conformational surrogate of an aggregation-competent protein region. They build, run, and
+score deterministically; the audit passes 5/5. They were designed to require relational
+reasoning over a contact graph.
+
+They do not. A policy with three hand-set weights scores 1.0 on three of the five. That was
+established after release, by gates the original release specified and never ran, and it
+survived four attempts to design the shortcut away.
+
+So this repository is two things, and the second is the more useful one:
+
+1. **Five runnable Harbor tasks**, with their limits measured rather than asserted. Two of the
+   five (Aβ42, TDP-43) still discriminate; three do not.
+2. **A validation study with a negative result**, plus the instruments that produced it —
+   an effective-dimensionality gate, an ablation verifier, an action-order gate, an
+   information-level aliasing test, and simulator invariants. None of these existed in the
+   released version, and each one found a real defect.
+
+Every number below is reproducible from a named command — see
+[Verifying the claims](#verifying-the-claims).
 
 ---
 
@@ -99,13 +114,13 @@ chains, is in [`agentic/specs/SCIENTIFIC_SCOPE.md`](agentic/specs/SCIENTIFIC_SCO
 
 ## The five tasks
 
-| task | disease | fragment | source |
-|---|---|---|---|
-| [`alzheimer-abeta42-v8`](alzheimer-abeta42-v8/) | Alzheimer's | Aβ 1–42, full peptide | APP amyloid-β region |
-| [`parkinson-alpha-synuclein-v8`](parkinson-alpha-synuclein-v8/) | Parkinson's | NAC domain 61–95 + flanks (55–105) | UniProt P37840 |
-| [`alzheimer-tau-v8`](alzheimer-tau-v8/) | Alzheimer's / tauopathy | PHF6* (592–597) through PHF6 (623–628), 585–635 | UniProt P10636 |
-| [`als-ftd-tdp43-v8`](als-ftd-tdp43-v8/) | ALS / FTD | LCD aggregation hotspot 311–360 | UniProt Q13148 |
-| [`huntington-htt-polyq-v8`](huntington-htt-polyq-v8/) | Huntington's | exon-1 surrogate: N17 + polyQ36 + P11 | HTT exon-1 derived |
+| task | disease | fragment | source | usable? |
+|---|---|---|---|---|
+| [`alzheimer-abeta42-v8`](alzheimer-abeta42-v8/) | Alzheimer's | Aβ 1–42, full peptide | APP amyloid-β region | **yes** — 3-weight policy scores 0.795 |
+| [`als-ftd-tdp43-v8`](als-ftd-tdp43-v8/) | ALS / FTD | LCD aggregation hotspot 311–360 | UniProt Q13148 | **yes** — scores 0.581, hardest task |
+| [`parkinson-alpha-synuclein-v8`](parkinson-alpha-synuclein-v8/) | Parkinson's | NAC domain 61–95 + flanks (55–105) | UniProt P37840 | no — saturated at 1.0 |
+| [`alzheimer-tau-v8`](alzheimer-tau-v8/) | Alzheimer's / tauopathy | PHF6* (592–597) through PHF6 (623–628), 585–635 | UniProt P10636 | no — saturated at 1.0 |
+| [`huntington-htt-polyq-v8`](huntington-htt-polyq-v8/) | Huntington's | exon-1 surrogate: N17 + polyQ36 + P11 | HTT exon-1 derived | no — 3 weights beat the reference |
 
 Fragments are the canonical aggregation-competent regions from the literature, not
 runtime-driven truncations. Aβ42 is the **golden template**: built, validated and frozen
@@ -336,6 +351,30 @@ python3 _dev/freeze_task.py --task <task> --episodes 128   # new per-task seed b
 
 The seed block is drawn from a SHA-256 of the task slug, disjoint by construction from every
 train, validation, calibration and development split.
+
+## Verifying the claims
+
+Nothing here asks to be taken on trust. Each claim maps to a command and to a stored result.
+
+| claim | command | stored result |
+|---|---|---|
+| tasks build, run and score; oracle = 1.0 | `python3 _dev/final_audit.py` | `agentic/reports/audits/final_audit.json` |
+| simulator invariants hold | `python3 _dev/test_physics.py <task>` | 14 checks, printed |
+| the artifact contract rejects malformed input | `python3 _dev/test_artifact_contract.py <task>` | 19 cases, printed |
+| a ≤40-parameter controller reaches ≥95% of full-policy gain (A3 FAIL) | `python3 _dev/gate_a3.py --task alzheimer-abeta42-v8 --budget 12000 --runs 3` | `agentic/reports/validation/a3_alzheimer-abeta42-v8.json` |
+| the A3 ablation really removes message passing and history | `python3 _dev/verify_a3_masks.py` | printed; reports effective vs nominal dimension |
+| order changes the outcome in 100% of episodes (A6 PASS) | `python3 _dev/gate_a6.py --task alzheimer-abeta42-v8` | `agentic/reports/validation/a6_alzheimer-abeta42-v8.json` |
+| local edge features suffice; aggregation adds +0.011 AUC | `python3 _dev/gate_aliasing.py --task alzheimer-abeta42-v8` | `agentic/reports/validation/aliasing_alzheimer-abeta42-v8.json` |
+| the sampler defects, and that fixing them breaks the task | `git checkout v8.1-physics-fixes && python3 _dev/test_physics.py alzheimer-abeta42-v8` | branch `v8.1-physics-fixes`, commit message carries the measured table |
+| four redesigns failed to remove the shortcut | branch `v9.1-relational-composition` | commit messages carry each redesign and its result |
+
+The 3-weight policy that saturates three tasks is not a special harness: it is a normal
+`policy.json` satisfying the published artifact contract, built by setting three weights of
+2541 and scored through the released verifier. `_dev/gate_a3.py` constructs it
+(`hand_set()`), and the aliasing sample cache is regenerated automatically if absent.
+
+Branches referenced above are pushed and public. Where a claim rests on a run that has not
+been repeated, it says so.
 
 ## Governance
 

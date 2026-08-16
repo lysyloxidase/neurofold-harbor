@@ -24,7 +24,7 @@ scientific_scope = "Physics-informed coarse-grained stochastic conformational-co
 disease = "Alzheimer's disease"
 protein = "amyloid-beta 42 (two-chain)"
 action_space = "(i, j, strength): contact-selective energy modulation of pair (i,j) followed by ordinary Metropolis relaxation; not a mechanical force"
-version_notes = "v8: two-chain dimer; non-separable pair chemistry so partner identity matters; directional saturable beta term; maturation/locking hysteresis so action ORDER matters; irreversible damage from physical events only; partial observability (latent oxidative stress and chaperone capacity); action budget. Relational necessity verified (full graph controller vs local-only: +0.557, 95% CI [+0.126, +0.698])."
+version_notes = "v8: two-chain dimer; non-separable pair chemistry so partner identity matters; directional saturable beta term; maturation/locking hysteresis so action ORDER matters; irreversible damage from physical events only; partial observability (latent oxidative stress and chaperone capacity); action budget. A1 (full graph controller vs edge-ablated controller) measured +0.557, 95% CI [+0.126, +0.698], but that is NOT a necessity result: the ablation arm is a crippled graph controller, not a cheap one. A3 (<=40-parameter controller must stay below 95% of full-policy gain) FAILS: a hand-set 3-weight policy reaches 96.7%. See agentic/reports/audits/v8.0_shortcut_finding.md."
 
 [agent]
 timeout_sec = 3600.0

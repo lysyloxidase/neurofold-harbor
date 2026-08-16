@@ -1,7 +1,11 @@
 # Acceptance criteria
 
 Thresholds are **fixed here before results** and may not be changed after seeing
-them (see `FORBIDDEN_CHANGES.md`). A gate that fails stops the pipeline; the
+them. None below has been changed. Two entries carry post-release annotations
+recording what the gate turned out to measure and what it returned when run; the
+criteria themselves are untouched.
+
+Original text preserved, annotations added (see `FORBIDDEN_CHANGES.md`). A gate that fails stops the pipeline; the
 root cause is reported rather than tuned around.
 
 ## Porting gate — must pass before a reference policy is trained for a protein
@@ -21,9 +25,9 @@ root cause is reported rather than tuned around.
 
 | id | claim under test | criterion |
 |---|---|---|
-| A1 | relational necessity | full edge-aware controller > local-only; hierarchical 95% CI excludes 0; effect ≥ 10% of gain over the zero anchor |
+| A1 | ~~relational necessity~~ **edge-ablation sensitivity** | full edge-aware controller > local-only; hierarchical 95% CI excludes 0; effect ≥ 10% of gain over the zero anchor. **Renamed after the fact:** the ablation arm is a crippled graph controller, not a cheap one, so passing A1 does not establish that relational structure is necessary. Both arms lose to a hand-set 3-weight policy. |
 | A2 | sequential/history necessity | history-aware > matched static controller; CI excludes 0 |
-| A3 | effective dimensionality | a ≤40-parameter controller must NOT reach ≥95% of full-policy gain |
+| A3 | effective dimensionality | a ≤40-parameter controller must NOT reach ≥95% of full-policy gain. **Run after release: FAILS.** A hand-set 3-weight policy reaches 96.7% and a 31-parameter readout 95.2%, and the failure survived four redesigns. This is the gate that decides whether the architecture is earned; it was specified for v8.0 and not executed. Implemented in `_dev/gate_a3.py`, with `_dev/verify_a3_masks.py` proving the ablation is what it claims. |
 | A4 | RL vs static black-box | reported, not required. RL superiority claimed only where CI excludes 0 |
 | A5 | message-path ablation | deleting message weights measurably degrades utility and/or safety |
 | A6 | action-order dependence | per-task unit test: `U(seq A) ≠ U(seq B)` for identical multisets |
