@@ -156,6 +156,49 @@ def main(task="alzheimer-abeta42-v8"):
     except Exception as exc:
         check("policy handles an empty contact graph", False, f"{type(exc).__name__}: {exc}")
 
+    # --- Monte Carlo hygiene (v8.1) ----------------------------------------
+    env = NeuroFoldV8Env(prof, seed=21)
+    M = int(prof["physics"].get("n_metropolis", 3))
+    th, ac = env._crn_thermal, env._crn_accept
+    check("proposals within a step are independent draws",
+          th.ndim == 4 and th.shape[1] == M and not np.allclose(th[5, 0], th[5, 1 % M]),
+          f"shape {th.shape}")
+    check("one acceptance draw per (step, proposal), none reused",
+          ac.ndim == 2 and ac.shape[1] == M and len(np.unique(ac)) == ac.size,
+          f"{len(np.unique(ac))} unique of {ac.size}")
+
+    # Common random numbers must survive the fix: draws may depend on the seed
+    # and the index, never on the actions taken.
+    a = NeuroFoldV8Env(prof, seed=22)
+    b = NeuroFoldV8Env(prof, seed=22)
+    a.observe()
+    b.observe()
+    for _ in range(10):
+        a.step((2, 9, 1.0))
+        b.step((0, 0, 0.0))
+    check("common random numbers preserved across policies",
+          np.array_equal(a._crn_thermal, b._crn_thermal)
+          and np.array_equal(a._crn_accept, b._crn_accept))
+
+    # The re-formation penalty must be antisymmetric, or the chain has no
+    # stationary distribution: charging a function of the current state alone
+    # gives A->B and B->A different costs, while charging the CHANGE cancels.
+    env = NeuroFoldV8Env(prof, seed=23)
+    env.observe()
+    for _ in range(12):
+        env.step((3, 11, 1.0))
+    thr = prof["physics"]["contact_break_level"]
+    xA = env.x.copy()
+    xB = xA + 0.05 * env._crn_thermal[0, 0]
+    cA = env.energy.total(xA, env.env_state["screening"],
+                          crowding=env.env_state["crowding"], mod=env.mod)[2]["contact"]
+    cB = env.energy.total(xB, env.env_state["screening"],
+                          crowding=env.env_state["crowding"], mod=env.mod)[2]["contact"]
+    fwd = float(np.sum(env.block * (cB > thr)) - np.sum(env.block * (cA > thr))) / 2.0
+    rev = float(np.sum(env.block * (cA > thr)) - np.sum(env.block * (cB > thr))) / 2.0
+    check("re-formation penalty is antisymmetric (detailed balance)",
+          abs(fwd + rev) < 1e-12, f"forward {fwd:+.6f}, reverse {rev:+.6f}")
+
     # --- determinism: same seed, same trajectory ---------------------------
     def roll(seed):
         e = NeuroFoldV8Env(prof, seed=seed)

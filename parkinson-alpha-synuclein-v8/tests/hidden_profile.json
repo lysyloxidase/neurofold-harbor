@@ -30,11 +30,6 @@
       "weight": 0.4
     }
   ],
-  "salt_bridge": {
-    "donor_residue": 22,
-    "acceptor_residue": 27,
-    "note": "D23-K28 in 1-based numbering; effect is context dependent, see mechanism"
-  },
   "physics": {
     "b0": 1.0,
     "k_bond": 12.0,
@@ -391,5 +386,6 @@
     "policy_sha256": {
       "challenge_reference": "b5ab132a6d7194b40cd864dba728da2100a1e3617cc31e70aacc7c21557606e5"
     }
-  }
+  },
+  "_removed_salt_bridge": "The D23-K28 field was declared but never read by any code, and it was copied verbatim into tau, TDP-43 and alpha-synuclein, where those positions are unrelated residues. Removed rather than left as an unimplemented biological claim that reads like a justification."
 }

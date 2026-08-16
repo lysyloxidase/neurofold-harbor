@@ -77,9 +77,19 @@ class NeuroFoldV8Env:
         """
         rng = np.random.default_rng([self.seed, 12345])
         T = self.max_steps + 2
-        self._crn_thermal = rng.normal(0.0, 1.0, (T, self.n, 3))
+        M = int(self.p.get("n_metropolis", 3))
+        # One INDEPENDENT proposal and one INDEPENDENT acceptance draw per
+        # (step, proposal). v8.0 indexed both by step alone: all M proposals in
+        # a step were the identical displacement vector, so an accepted move was
+        # re-proposed unchanged and the chain drifted along one direction instead
+        # of random-walking; and acceptance uniforms were shared between
+        # neighbouring steps, each number serving ~2.9 decisions. Common random
+        # numbers across POLICIES is the point and is preserved — the draws are
+        # still a deterministic function of the seed and the (step, proposal)
+        # index, never of the actions taken.
+        self._crn_thermal = rng.normal(0.0, 1.0, (T, M, self.n, 3))
         self._crn_ou = rng.normal(0.0, 1.0, (T, len(self.profile["conditions"])))
-        self._crn_accept = rng.random(T)
+        self._crn_accept = rng.random((T, M))
         self._crn_obs = rng.normal(0.0, 1.0, (T, 8))
 
     def reset(self):
@@ -301,15 +311,23 @@ class NeuroFoldV8Env:
         n_metro = int(p.get("n_metropolis", 3))
         accepted_here = 0
         for m in range(n_metro):
-            noise = sigma_th * self._crn_thermal[self.steps] * p.get("metro_scale", 1.0)
+            noise = sigma_th * self._crn_thermal[self.steps, m] * p.get("metro_scale", 1.0)
             cand = self.x + noise
-            e_new, _, _ = self.energy.total(cand, self.env_state["screening"],
-                                            crowding=self.env_state["crowding"],
-                                            mod=self.mod)
-            # re-formation penalty on blocked pairs discourages immediate re-pairing
-            barrier = float(np.sum(self.block * (self.contact > p["contact_break_level"]))) / 2.0
+            e_new, _, contact_new = self.energy.total(
+                cand, self.env_state["screening"],
+                crowding=self.env_state["crowding"], mod=self.mod)
+            # Re-formation penalty on blocked pairs, charged as a DIFFERENCE.
+            # v8.0 added a penalty computed from the current state to dE
+            # regardless of direction, so A->B and B->A carried different costs
+            # and the chain had no stationary distribution at all. Charging the
+            # change in blocked-contact mass keeps the penalty antisymmetric, so
+            # the acceptance is reversible again while still discouraging
+            # immediate re-pairing.
+            blk = self.block * (self.contact > p["contact_break_level"])
+            blk_new = self.block * (contact_new["contact"] > p["contact_break_level"])
+            barrier = float(np.sum(blk_new) - np.sum(blk)) / 2.0
             dE = (e_new - self.energy_total) + p["block_weight"] * barrier
-            u = self._crn_accept[(self.steps + m) % len(self._crn_accept)]
+            u = self._crn_accept[self.steps, m]
             if dE <= 0 or u < np.exp(-min(60.0, dE / kT)):
                 self.x = cand
                 accepted_here += 1
