@@ -84,7 +84,7 @@ Provided starting points:
 
 ## Splits
 
-`profile.json` lists 64 public training seeds and 32 public validation seeds.
+`profile.json` lists 64 public training seeds and 128 public validation seeds.
 Use validation for model selection. Hidden evaluation uses **unseen** episodes
 and a shifted mechanism and condition set, so a policy that only fits the public
 episodes will not transfer.

@@ -305,10 +305,13 @@ Stated rather than hidden. None of these were tuned away.
   (1.086), both confirmed by retraining their anchors with six restarts. `alzheimer-abeta42-v8`
   (0.795) and `als-ftd-tdp43-v8` (0.581) discriminate as shipped. HTT discriminates *only if
   its anchor is retrained*.
-* **Model selection on the public validation split is close to unreliable.** 32 selection
-  episodes against a ±5% measurement resolution. On both confirmed tasks the restart with the
-  best validation utility scored *worse* on the hidden split than the shipped anchor.
-  `instruction.md` nevertheless tells agents to select on that split.
+* **Model selection on the public validation split was close to unreliable, and is now
+  wider.** With 32 selection episodes against a ±5% measurement resolution, the retrained
+  references for α-synuclein and tau both won on validation and then scored *worse* than the
+  shipped anchor on the hidden split. The split has since been widened to **128 episodes**
+  (seeds 2000–2127, disjoint from all ten other ranges in use). Anchors, dynamics and the
+  hidden split are untouched, so previously trained policies remain comparable — but any
+  selection made on the old 32 episodes should be redone.
 * **HTT's challenge reference is undertrained** — uniquely among the five. Six restarts reach
   extended 1.608, a 61% larger gain over no-op, and restart-to-restart validation utility spans
   −0.298 to −0.553. Retrain the anchor before using the task.
