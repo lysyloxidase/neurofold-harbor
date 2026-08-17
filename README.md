@@ -35,8 +35,13 @@ Every number below is reproducible from a named command — see
 >
 > A policy with **3 non-zero weights out of 2541**, hand-written and never trained, scores
 > **1.0 through the released verifier on three of the five tasks** (HTT, α-synuclein, tau)
-> and 0.795 / 0.581 on the other two. On HTT it beats the frozen challenge reference
-> outright, on both reward and safety.
+> and 0.795 / 0.581 on the other two.
+>
+> One earlier phrasing here has since been **corrected by measurement**: HTT's shipped
+> reference was undertrained, not beaten. Retrained with six restarts instead of two it
+> reaches extended 1.608 against the 3-weight policy's 1.562. What that leaves is arguably
+> worse — 72 000 training episodes over 2541 parameters buy **3%** over three weights set by
+> hand, inside this benchmark's own ±5% resolution.
 >
 > The claim rested on gate A1, which compares a full graph controller against the *same
 > controller with its edges zeroed* — a crippled graph controller, never a cheap one. Both
@@ -123,7 +128,7 @@ chains, is in [`agentic/specs/SCIENTIFIC_SCOPE.md`](agentic/specs/SCIENTIFIC_SCO
 | [`als-ftd-tdp43-v8`](als-ftd-tdp43-v8/) | ALS / FTD | LCD aggregation hotspot 311–360 | UniProt Q13148 | **yes** — scores 0.581, hardest task |
 | [`parkinson-alpha-synuclein-v8`](parkinson-alpha-synuclein-v8/) | Parkinson's | NAC domain 61–95 + flanks (55–105) | UniProt P37840 | no — saturated at 1.0 |
 | [`alzheimer-tau-v8`](alzheimer-tau-v8/) | Alzheimer's / tauopathy | PHF6* (592–597) through PHF6 (623–628), 585–635 | UniProt P10636 | no — saturated at 1.0 |
-| [`huntington-htt-polyq-v8`](huntington-htt-polyq-v8/) | Huntington's | exon-1 surrogate: N17 + polyQ36 + P11 | HTT exon-1 derived | no — 3 weights beat the reference |
+| [`huntington-htt-polyq-v8`](huntington-htt-polyq-v8/) | Huntington's | exon-1 surrogate: N17 + polyQ36 + P11 | HTT exon-1 derived | no — saturated; its reference is also undertrained |
 
 Fragments are the canonical aggregation-competent regions from the literature, not
 runtime-driven truncations. Aβ42 is the **golden template**: built, validated and frozen
@@ -292,8 +297,10 @@ Stated rather than hidden. None of these were tuned away.
   1.0). Only `alzheimer-abeta42-v8` (0.795) and `als-ftd-tdp43-v8` (0.581) discriminate. Use
   those two if you want signal; the other three currently measure nothing above a trivial
   baseline.
-* **HTT's challenge reference is weaker than a 3-weight policy** on both reward (extended
-  1.562) and catastrophe rate (34.4% vs 24.2%). Its upper anchor is not a challenge.
+* **HTT's challenge reference is undertrained.** Its upper anchor reflects sep-CMA-ES with
+  two restarts on a multimodal landscape, not the task. Six restarts reach extended 1.608 —
+  a 61% larger gain over no-op — and restart-to-restart validation utility spans −0.298 to
+  −0.553. The anchor should be retrained before the task is used.
 * **The reward's largest-weighted term barely moves.** `pathology_reduction` (weight 0.34)
   contributes 0.1%–24% of the reference's advantage and −101.6% on α-synuclein, because
   pathology is not controllable under v8.0 physics. The energy terms that do the work are
@@ -373,6 +380,7 @@ Nothing here asks to be taken on trust. Each claim maps to a command and to a st
 | the sampler defects, and that fixing them breaks the task | `git checkout v8.1-physics-fixes && python3 _dev/test_physics.py alzheimer-abeta42-v8` | branch `v8.1-physics-fixes`, commit message carries the measured table |
 | four redesigns failed to remove the shortcut | branch `v9.1-relational-composition` | commit messages carry each redesign and its result |
 | the chemistry reproduces four known aggregation orderings | `python3 _dev/test_biological_ordering.py` | `agentic/reports/validation/biological_ordering.json` |
+| HTT's shipped reference is undertrained (6 restarts → extended 1.608) | `python3 _dev/train_reference.py --task huntington-htt-polyq-v8 --budget 12000 --restarts 6` | §6f of the shortcut report; artifact not preserved, point estimates only |
 
 The 3-weight policy that saturates three tasks is not a special harness: it is a normal
 `policy.json` satisfying the published artifact contract, built by setting three weights of
