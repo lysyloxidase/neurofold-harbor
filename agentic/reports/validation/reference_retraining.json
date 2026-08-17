@@ -1,0 +1,38 @@
+{
+  "question": "Is 'three of five tasks are saturated by a 3-weight policy' an artifact of undertrained references? All five references shipped with 2 sep-CMA-ES restarts on a demonstrably multimodal landscape.",
+  "method": "Retrain with 6 restarts, same 12000-episode budget each, selection on the public validation split; evaluate frozen / retrained / hand-set on the hidden final-test split, 128 episodes. Frozen references copied aside before training and restored after; hashes re-verified against the hidden profile.",
+  "tasks": {
+    "huntington-htt-polyq-v8": {
+      "validation_spread": [
+        -0.298,
+        -0.553
+      ],
+      "frozen_extended": 1.0,
+      "retrained_extended": 1.608,
+      "hand_set_extended": 1.562,
+      "verdict": "ANCHOR WAS UNDERTRAINED \u2014 retrained reference beats the 3-weight policy. Saturation claim withdrawn for this task."
+    },
+    "parkinson-alpha-synuclein-v8": {
+      "validation_spread": [
+        -0.071,
+        -0.372
+      ],
+      "frozen_extended": 1.0,
+      "retrained_extended": 0.946,
+      "hand_set_extended": 1.045,
+      "verdict": "SATURATION CONFIRMED \u2014 six restarts did not improve on the frozen anchor; the retrained policy is worse on the hidden split despite a better validation score, i.e. it overfits the 32-episode selection split."
+    },
+    "alzheimer-tau-v8": {
+      "validation_spread": [
+        -0.0055,
+        -0.106
+      ],
+      "frozen_extended": 1.0,
+      "retrained_extended": 0.974,
+      "hand_set_extended": 1.086,
+      "verdict": "SATURATION CONFIRMED \u2014 same pattern, and the narrowest restart spread of the three, consistent with a landscape where two restarts already suffice."
+    }
+  },
+  "conclusion": "The saturation claim holds for 2 of the 3 tasks it was made about and fails for HTT. It is corrected per task rather than wholesale. Retraining is not a general fix: on alpha-synuclein and tau it made things worse on the hidden split, because selection runs on 32 validation episodes.",
+  "secondary_finding": "Validation-split selection is unreliable here. On both confirmed tasks the restart with the best validation utility scored WORSE on the hidden split than the shipped anchor. With 32 selection episodes and a measurement resolution near +-5%, model selection is close to noise."
+}
