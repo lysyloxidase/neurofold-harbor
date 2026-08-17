@@ -1,0 +1,44 @@
+{
+  "wild_type_pathology": 1.721125,
+  "n_seeds": 64,
+  "cases": {
+    "Arctic  E22G": {
+      "pathology": 1.7307500000000002,
+      "delta": 0.009625000000000002,
+      "ci95": [
+        -0.007750000000000007,
+        0.03750000000000001
+      ],
+      "outcome": "null (point est. right way)"
+    },
+    "Dutch   E22Q": {
+      "pathology": 2.56071875,
+      "delta": 0.8395937499999999,
+      "ci95": [
+        0.5962812499999999,
+        1.0986023437499992
+      ],
+      "outcome": "MATCHES"
+    },
+    "Italian E22K": {
+      "pathology": 1.6803750000000002,
+      "delta": -0.04075000000000001,
+      "ci95": [
+        -0.11500312500000001,
+        0.011875
+      ],
+      "outcome": "null (point est. WRONG way)"
+    },
+    "Iowa    D23N": {
+      "pathology": 1.6811250000000002,
+      "delta": -0.04000000000000001,
+      "ci95": [
+        -0.11375000000000002,
+        0.013124999999999998
+      ],
+      "outcome": "null (point est. WRONG way)"
+    }
+  },
+  "matched": 1,
+  "note": "The model reproduces 1 of 4 familial mutation effects. The one it gets is the one its own scales force. This is the limit of its external validity and it is reported rather than omitted."
+}

@@ -19,9 +19,9 @@ So this repository is two things, and the second is the more useful one:
    an effective-dimensionality gate, an ablation verifier, an action-order gate, an
    information-level aliasing test, simulator invariants, and an external-validity test
    against the aggregation literature. None of these existed in the released version. Each
-   found a real defect, except the last, which the model **passes 4/4**: a shuffled sequence
-   of identical composition aggregates 3.3× less, so the chemistry is sequence-order
-   sensitive rather than composition-blind.
+   found a real defect — including the external-validity test, which the model passes 4/4 on
+   orderings its own scales force, and **fails 3 of 4** on familial Aβ mutations whose effects
+   they do not, twice with the wrong sign.
 
 Every number below is reproducible from a named command — see
 [Verifying the claims](#verifying-the-claims).
@@ -313,11 +313,12 @@ Stated rather than hidden. None of these were tuned away.
   nucleating hexapeptides occupy ~1 bead (KLVFF 1.0, VQIINK 1.2, VQIVYK 1.2), so steric-zipper
   interdigitation is not representable. `align` uses `|cos|`, so parallel and antiparallel
   registers are indistinguishable to the energy model.
-* **External validity is qualitative only.** The model now passes four pre-registered ordering
-  tests against the aggregation literature (`_dev/test_biological_ordering.py`, 4/4 PASS),
-  including sequence order versus composition. But no rate, threshold or absolute magnitude is
-  calibrated against experiment, aggregation kinetics are untested, and this validates the
-  energy model rather than the control task.
+* **The model is internally consistent and externally unvalidated.** It passes four
+  pre-registered ordering tests (`_dev/test_biological_ordering.py`, 4/4) — but each is close
+  to arithmetically forced by scales the model already contains. On the harder test, familial
+  Aβ mutations at E22/D23 that are known to increase aggregation
+  (`_dev/test_familial_mutations.py`), it reproduces **1 of 4**, with Italian E22K and Iowa
+  D23N pointing the wrong way. Nothing is calibrated against experiment.
 
 * **TDP-43 P8 = FAIL.** The best of six hand-coded probe policies left 16.7% of episodes
   catastrophic against a 10% threshold. The verdict was not re-opened. A learned controller,
@@ -379,7 +380,8 @@ Nothing here asks to be taken on trust. Each claim maps to a command and to a st
 | local edge features suffice; aggregation adds +0.011 AUC | `python3 _dev/gate_aliasing.py --task alzheimer-abeta42-v8` | `agentic/reports/validation/aliasing_alzheimer-abeta42-v8.json` |
 | the sampler defects, and that fixing them breaks the task | `git checkout v8.1-physics-fixes && python3 _dev/test_physics.py alzheimer-abeta42-v8` | branch `v8.1-physics-fixes`, commit message carries the measured table |
 | four redesigns failed to remove the shortcut | branch `v9.1-relational-composition` | commit messages carry each redesign and its result |
-| the chemistry reproduces four known aggregation orderings | `python3 _dev/test_biological_ordering.py` | `agentic/reports/validation/biological_ordering.json` |
+| the chemistry reproduces four known aggregation orderings (near-tautological) | `python3 _dev/test_biological_ordering.py` | `agentic/reports/validation/biological_ordering.json` |
+| it reproduces only 1 of 4 familial Aβ mutation effects | `python3 _dev/test_familial_mutations.py` | `agentic/reports/validation/familial_mutations.json` |
 | HTT's shipped reference is undertrained (6 restarts → extended 1.608) | `python3 _dev/train_reference.py --task huntington-htt-polyq-v8 --budget 12000 --restarts 6` | §6f of the shortcut report; artifact not preserved, point estimates only |
 
 The 3-weight policy that saturates three tasks is not a special harness: it is a normal

@@ -1,5 +1,17 @@
 """External-validity test: does the model reproduce known qualitative orderings?
 
+READ THIS FIRST. The four predictions below all PASS, and that result is much
+weaker than it looks. Each is close to arithmetically forced by scales written
+into the model: shuffling changes bead composition, G/S differ from I/A in
+hydropathy, Q feeds the polar-zipper term directly, and proline carries
+beta = 0.05. They establish that the model is internally consistent with its own
+scales, NOT that it has external validity.
+
+A harder test is in `_dev/test_familial_mutations.py`: familial Abeta mutations
+that increase aggregation for structural reasons the scales do not encode. The
+model gets 1 of 4, with two point estimates in the WRONG direction. Read the two
+files together, or not at all.
+
 Every previous audit of this project measured the benchmark against itself. This
 one measures it against the aggregation literature. It needs no experimental
 data, only facts that are not in dispute, encoded as ORDERING predictions that
